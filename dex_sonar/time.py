@@ -9,6 +9,10 @@ def get_timestamp() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def get_time_passed_since(ts: datetime) -> timedelta:
+    return datetime.now(timezone.utc) - ts
+
+
 def ceil_timestamp_minute(ts: datetime) -> datetime:
     ceiled_part = timedelta(seconds=ts.second, microseconds=ts.microsecond)
     return ts if not ceiled_part else ts - ceiled_part + timedelta(minutes=1)
