@@ -3,9 +3,9 @@ from typing import Callable
 
 from pybit.unified_trading import HTTP, WebSocket
 
+from dex_sonar import time
 from dex_sonar.pair import Pair, Symbol, TimeSeries
 from dex_sonar.pybit_converters import Response, convert_get_kline, convert_get_tickers, convert_stream_kline, convert_stream_ticker
-from dex_sonar.time import MIN_TIMESTAMP, ceil_timestamp_minute, get_timestamp
 
 
 Pairs = list[Pair]
@@ -63,7 +63,7 @@ class LivePairs:
             ))
 
         self.pairs = {x.symbol: x for x in self.include_filter(pairs)}
-        self.last_update = {x: MIN_TIMESTAMP for x in self.pairs}
+        self.last_update = {x: time.MIN_TIMESTAMP for x in self.pairs}
 
     def _update_kline(self, symbol: Symbol):
         kline = convert_get_kline(
@@ -106,25 +106,25 @@ class LivePairs:
             kline = convert_stream_kline(response)
             self.pairs[kline.symbol].prices.update(
                 kline.close,
-                ceil_timestamp_minute(kline.end),
+                time.ceil_timestamp_minute(kline.end),
                 is_final=True,
             )
             self.pairs[kline.symbol].turnovers.update(
                 kline.turnover,
-                ceil_timestamp_minute(kline.end),
+                time.ceil_timestamp_minute(kline.end),
                 is_final=True,
             )
 
     def _handle_ticker_update(self, response: Response):
         symbol = response['data']['symbol']
 
-        if get_timestamp() - self.last_update[symbol] >= self.update_frequency:
-            self.last_update[symbol] = get_timestamp()
+        if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency:
+            self.last_update[symbol] = time.get_timestamp()
             ticker = convert_stream_ticker(response)
 
             self.pairs[symbol].prices.update(
                 ticker.price,
-                ceil_timestamp_minute(ticker.timestamp),
+                time.ceil_timestamp_minute(ticker.timestamp),
             )
             self.pairs[symbol].update(
                 turnover=ticker.turnover,
