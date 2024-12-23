@@ -30,16 +30,23 @@ class Pair:
 
     def create_chart(
             self,
-            width=16,
+            size=1,
             height_ratio=0.25,
 
             color='#4287f5',
-            prices_as_percents=False,
+            price_as_percent=False,
+            turnover_as_percent=False,
+            hide_price_ticks=False,
+            hide_turnover_ticks=False,
+            time_on_top=False,
             timestamp_format='%H:%M',
 
+            size_price=1.0,
+            size_turnover=1.0,
             size_tick=1.0,
+            size_grid=1.0,
 
-            alpha_tick=0.6,
+            alpha_tick=0.8,
             alpha_turnover=0.1,
             alpha_grid=0.2,
 
@@ -47,7 +54,7 @@ class Pair:
             max_ticks_y=None,
     ) -> plt.Figure:
 
-        fig, ax1 = plt.subplots(figsize=(width, width * height_ratio))
+        fig, ax1 = plt.subplots(figsize=(16 * size, 16 * size * height_ratio))
         ax1: plt.Axes
         ax2: plt.Axes = ax1.twinx()
         axes = ax1, ax2
@@ -57,14 +64,14 @@ class Pair:
             self.prices.get_timestamps(),
             self.prices.get_values(),
             color=color,
-            linewidth=1.5,
+            linewidth=1.5 * 1.1 * size * size_price,
         )
         ax2.bar(
             self.turnovers.get_timestamps(),
             self.turnovers.get_values(),
-            color=color,
+            color='#000000',
             alpha=alpha_turnover,
-            width=0.001 * width / 16,
+            width=0.001 * size_turnover,
         )
 
         # remove edges
@@ -83,24 +90,25 @@ class Pair:
         # remove ticks and move tick labels
         for ax in axes: ax.tick_params(left=False, bottom=False, right=False)
         ax1.tick_params(
+            labelbottom=not time_on_top,
+            labeltop=time_on_top,
             labelleft=False,
-            labelright=True,
+            labelright=not hide_price_ticks,
         )
         ax2.tick_params(
-            labelleft=True,
-            labelright=False,
             labelbottom=False,
+            labelleft=not hide_turnover_ticks,
+            labelright=False,
         )
 
         # set tick size and opacity
-        ax1.tick_params(axis='both', labelsize=size_tick * 10, colors=(0, 0, 0, alpha_tick))
-        ax2.tick_params(axis='y', labelsize=size_tick * 10, colors=(0, 0, 0, alpha_tick))
+        ax1.tick_params(axis='both', labelsize=10 * 1.1 * size * size_tick, colors=(0, 0, 0, alpha_tick))
+        ax2.tick_params(axis='y', labelsize=10 * 1.1 * size * size_tick, colors=(0, 0, 0, alpha_tick))
 
         # format ticks
         ax1.xaxis.set_major_formatter(DateFormatter(timestamp_format))
-        if not prices_as_percents: ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,g}'))
-        else: ax1.yaxis.set_major_formatter(PercentFormatter(xmax=self.prices[-1]))
-        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,.0f}'))
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,g}') if not price_as_percent else PercentFormatter(xmax=self.prices[-1], decimals=1))
+        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,.0f}') if not turnover_as_percent else PercentFormatter(xmax=self.turnovers[-1]))
 
         # limit the number of ticks
         if max_ticks_x: ax1.xaxis.set_major_locator(MaxNLocator(nbins=max_ticks_x))
@@ -110,8 +118,8 @@ class Pair:
         # add grid
         ax1.grid(
             color='#000000',
+            linewidth=0.7 * size * size_grid,
             alpha=alpha_grid,
-            linewidth=0.5,
         )
 
         return fig
