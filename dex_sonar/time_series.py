@@ -40,6 +40,9 @@ class TimeSeries(Generic[Value]):
     def is_empty(self):
         return not self.values
 
+    def get_last_index(self) -> Index:
+        return self.last
+
     def get_time_step(self):
         return self.step
 
