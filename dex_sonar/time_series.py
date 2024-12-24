@@ -4,6 +4,7 @@ from typing import Generic, Sequence, TypeVar
 
 Value = TypeVar('Value')
 Timestamp = datetime
+Timestep = timedelta
 Index = int
 Values = list[Value]
 Timestamps = list[Timestamp]
@@ -18,10 +19,10 @@ class InvalidTimeRange(Exception):
 
 
 class TimeSeries(Generic[Value]):
-    def __init__(   self, step: timedelta):
+    def __init__(   self, step: Timestep):
         self.values: Values = []
         self.start: Timestamp = None
-        self.step: timedelta = step
+        self.step: Timestep = step
         self.final: Index = -1
 
     def __len__(self):
@@ -43,7 +44,7 @@ class TimeSeries(Generic[Value]):
     def get_last_index(self) -> Index:
         return self.last
 
-    def get_time_step(self):
+    def get_time_step(self) -> Timestep:
         return self.step
 
     def get_timestamp(self, index: Index) -> Timestamp:
