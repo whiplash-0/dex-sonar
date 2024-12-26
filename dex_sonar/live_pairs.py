@@ -40,6 +40,9 @@ class LivePairs:
     def __getitem__(self, key) -> Pair:
         return self.pairs[key]
 
+    def __iter__(self) -> Pairs:
+        return iter(self.pairs.values())
+
     def __repr__(self):
         pairs = ', '.join([x.pretty_symbol for x in self.pairs.values()])
         return f'{self.__class__.__name__}({pairs})'
