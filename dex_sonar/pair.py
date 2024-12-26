@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum, auto
 from typing import Iterable, Optional
 
 from matplotlib import pyplot as plt
@@ -15,6 +16,12 @@ Turnover = float
 OpenInterest = float
 
 
+class Contract(Enum):
+    USDT = auto()
+    USDC = auto()
+    CLASSIC = auto()
+
+
 @dataclass
 class Pair:
     symbol: Symbol
@@ -26,12 +33,16 @@ class Pair:
     next_funding_time: datetime
 
     @property
-    def price(self):
-        return self.prices[-1]
+    def contract(self) -> Contract:
+        return (
+            Contract.USDT
+            if self.symbol.endswith('USDT') else
+            (Contract.USDC if self.symbol.endswith('PERP') else Contract.CLASSIC)
+        )
 
     @property
-    def pretty_symbol(self):
-        return self.symbol[:-4] if self.symbol.endswith('USDT') else self.symbol
+    def price(self):
+        return self.prices[-1]
 
     def update(self, turnover, open_interest, funding_rate, next_funding_time):
         self.turnover = turnover
