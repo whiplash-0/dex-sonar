@@ -5,6 +5,7 @@ from aiogram.utils import markdown
 
 from dex_sonar.bot import ImageBuffer, Text
 from dex_sonar.pair import Pair
+from dex_sonar.trend_detector import Trend
 
 
 def format_number_by_significant_digits(x, digits=1):
@@ -51,8 +52,8 @@ class Message(ABC):
         return self.buffer
 
 
-class EventMessage(Message):
-    def __init__(self, pair: Pair, event: str):
+class TrendMessage(Message):
+    def __init__(self, pair: Pair, trend: Trend):
         # text
         lines = []
 
@@ -60,7 +61,7 @@ class EventMessage(Message):
             if len(strings) == 1: lines.append(strings[0])
             else: lines.append(f'{strings[0]}{" " * (self.LINE_WIDTH - len(strings[0]) - len(strings[1]))}{strings[1]}')
 
-        add_line(pair.pretty_symbol, event)
+        add_line(pair.pretty_symbol, f'{trend.change:+.1%}')
         add_line('Price:', '$' + format_number_by_significant_digits(pair.price, digits=4))
         add_line('Turnover:', '$' + format_large_number(pair.turnover, decimal_places=1))
         add_line('Open interest:', format_large_number(pair.open_interest, decimal_places=0))

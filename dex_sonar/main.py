@@ -7,7 +7,7 @@ from dex_sonar.config import parameters
 from dex_sonar.config.config import config
 from dex_sonar.live_pairs import LivePairs
 from dex_sonar.logs import setup_logging
-from dex_sonar.message import EventMessage
+from dex_sonar.message import TrendMessage
 from dex_sonar.pair import Pair
 from dex_sonar.trend_detector import Trend, TrendDetector
 
@@ -61,7 +61,7 @@ class Application:
         if trend := self.trend_detector.detect(pair): self.bot.run_coroutine_threadsafe(self.callback_on_pair_update_async_part(pair, trend))
 
     async def callback_on_pair_update_async_part(self, pair: Pair, trend: Trend):
-        message = EventMessage(pair, event=f'{trend.change:+.1%}')
+        message = TrendMessage(pair, trend)
         await self.bot.send_message(
             parameters.USER_ID,
             message.get_text(),
