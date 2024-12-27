@@ -10,7 +10,7 @@ from colorama import Fore
 from dex_sonar.config import parameters
 
 
-VERBOSE = floor(mean([logging.DEBUG, logging.INFO]))
+VERBOSE = floor(mean([logging.INFO, logging.WARNING]))
 
 def verbose(self, msg, *args, **kwargs):
     if self.isEnabledFor(VERBOSE):
