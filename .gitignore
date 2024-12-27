@@ -2,7 +2,5 @@ playground
 images
 backup
 
-.env
-
 .idea
 __pycache__
