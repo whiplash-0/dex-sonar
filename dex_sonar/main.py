@@ -41,7 +41,7 @@ class Application:
             absolute_change_threshold=lambda range, is_uptrend: 0.01,
         )
         self.tasks = AsyncInfiniteTasks(
-            self.run_loop_updating_status(interval=timedelta(seconds=3)),
+            self.run_loop_updating_status(interval=timedelta(minutes=1)),
             self.run_loop_trend_detection(),
         )
         self.start = time.get_timestamp()
