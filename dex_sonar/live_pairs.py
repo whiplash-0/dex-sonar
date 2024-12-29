@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Callable
 
@@ -19,41 +20,41 @@ class LivePairs:
             include_filter: Callable[[Pairs], Pairs] = lambda pairs: pairs,
     ):
         self.pairs: dict[Symbol, Pair] = {}
+        self.requests = HTTP(testnet=False)
         self.update_frequency = update_frequency
         self.callback_on_update = callback_on_update
-        self.include_filter = include_filter
         self.last_update: dict[Symbol, datetime] = {}
-
-        self.requests = HTTP(
-            testnet=False,
-        )
-        self.websocket = WebSocket(
-            testnet=False,
-            channel_type='linear',
-        )
-
+        self.include_filter = include_filter
         self._init()
 
     def __len__(self):
         return len(self.pairs)
 
-    def __getitem__(self, key) -> Pair:
-        return self.pairs[key]
-
     def __iter__(self) -> Pairs:
         return iter(self.pairs.values())
 
+    def __getitem__(self, key) -> Pair:
+        return self.pairs[key]
+
     def __repr__(self):
-        pairs = ', '.join([x.pretty_symbol for x in self.pairs.values()])
-        return f'{self.__class__.__name__}({pairs})'
+        return f'{self.__class__.__name__}({", ".join([x.pretty_symbol for x in self])})'
 
+    @contextmanager
     def subscribe_to_stream(self):
-        self._update_klines()
-        self.websocket.kline_stream(1, self.pairs.keys(), self._handle_kline_update)
-        self.websocket.ticker_stream(self.pairs.keys(), self._handle_ticker_update)
+        ws = None
 
-    def close_connection(self):
-        self.websocket.exit()
+        try:
+            ws = WebSocket(
+                testnet=False,
+                channel_type='linear',
+            )
+            self._update_klines()
+            ws.kline_stream(1, self.pairs.keys(), self._handle_kline_update)
+            ws.ticker_stream(self.pairs.keys(), self._handle_ticker_update)
+            yield
+
+        finally:
+            ws.exit()
 
     def _init(self):
         pairs = []
@@ -71,6 +72,9 @@ class LivePairs:
 
         self.pairs = {x.symbol: x for x in self.include_filter(pairs)}
         self.last_update = {x: time.MIN_TIMESTAMP for x in self.pairs}
+
+    def _update_klines(self):
+        for symbol in self.pairs: self._update_kline(symbol)
 
     def _update_kline(self, symbol: Symbol):
         kline = convert_get_kline(
@@ -104,9 +108,6 @@ class LivePairs:
             kline.turnovers[-1],
             kline.starts[-1] + self.pairs[symbol].turnovers.get_time_step(),
         )
-
-    def _update_klines(self):
-        for symbol in self.pairs: self._update_kline(symbol)
 
     def _handle_kline_update(self, response: Response):
         if response['data'][0]['confirm']:
