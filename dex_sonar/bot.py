@@ -1,6 +1,5 @@
-import asyncio
 from io import BytesIO
-from typing import Coroutine, Iterable, Optional
+from typing import Coroutine, Iterable
 
 from telegram import Bot as TelegramBot, InlineKeyboardMarkup, LinkPreviewOptions
 from telegram.constants import ParseMode
@@ -22,36 +21,29 @@ class Bot:
         self.application_silent = ApplicationBuilder().token(token_silent).defaults(defaults).build()
         self.bot: TelegramBot = self.application.bot
         self.bot_silent: TelegramBot = self.application_silent.bot
-        self.asyncio_event_loop: Optional[asyncio.AbstractEventLoop] = None
 
     def add_handlers(self, handlers: Iterable[BaseHandler]):
         self.application.add_handlers(handlers)
         self.application_silent.add_handlers(handlers)
 
-    def run(self, coroutine: Coroutine):
-        asyncio.run(self._run(coroutine))
+    async def run(self, coro: Coroutine):
+        await self.application.initialize()
+        await self.application.start()
+        await self.application.updater.start_polling()
 
-    def run_coroutine_threadsafe(self, coroutine: Coroutine):
-        asyncio.run_coroutine_threadsafe(coroutine, loop=self.asyncio_event_loop)
+        await self.application_silent.initialize()
+        await self.application_silent.start()
+        await self.application_silent.updater.start_polling()
 
-    async def _run(self, coroutine: Coroutine):
-        self.asyncio_event_loop = asyncio.get_running_loop()
+        await coro
 
-        async with self.application:
-            await self.application.start()
-            await self.application.updater.start_polling()
+        await self.application_silent.updater.stop()
+        await self.application_silent.stop()
+        await self.application_silent.shutdown()
 
-            async with self.application_silent:
-                await self.application_silent.start()
-                await self.application_silent.updater.start_polling()
-
-                await coroutine
-
-                await self.application_silent.updater.stop()
-                await self.application_silent.stop()
-
-            await self.application.updater.stop()
-            await self.application.stop()
+        await self.application.updater.stop()
+        await self.application.stop()
+        await self.application.shutdown()
 
     def is_silent(self, bot: TelegramBot):
         return bot is self.bot_silent

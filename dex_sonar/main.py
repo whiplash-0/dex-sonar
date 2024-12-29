@@ -1,7 +1,9 @@
 import asyncio
 import logging
+from datetime import timedelta
 
 from dex_sonar import time
+from dex_sonar.async_infinite_tasks import AsyncInfiniteTasks
 from dex_sonar.bot import Bot
 from dex_sonar.config import parameters
 from dex_sonar.config.config import config
@@ -38,28 +40,28 @@ class Application:
             max_range=60,
             absolute_change_threshold=lambda range, is_uptrend: 0.01,
         )
-        self.event_loop = None
+        self.tasks = AsyncInfiniteTasks(
+            self.run_loop_updating_status(interval=timedelta(seconds=3)),
+            self.run_loop_trend_detection(),
+        )
         self.start = time.get_timestamp()
+        self.queue = asyncio.Queue()
 
     def run(self):
-        self.bot.run(self._run())
+        logger.info('Starting bot')
+        logger.info('Pairs: ' + ', '.join([x.pretty_symbol for x in self.pairs]))
+        asyncio.run(self._run())
+        logger.info('Stopping bot')
 
     async def _run(self):
+        await self.bot.run(self.tasks.run())
+
+    async def run_loop_updating_status(self, interval: timedelta):
         try:
-            logger.info('Starting bot')
-            logger.info('Pairs: ' + ', '.join([x.pretty_symbol for x in self.pairs]))
-
-            self.pairs.subscribe_to_stream()
-
             while True:
                 await self.update_bot_status()
-                await asyncio.sleep(10)
-
-        except asyncio.CancelledError:
-            logger.info('Stopping bot')
-
+                await asyncio.sleep(interval.total_seconds())
         finally:
-            self.pairs.close_connection()
             await self.clear_bot_status()
 
     async def update_bot_status(self):
@@ -68,8 +70,14 @@ class Application:
     async def clear_bot_status(self):
         await self.bot.remove_description()
 
+    async def run_loop_trend_detection(self):
+        with self.pairs.subscribe_to_stream():
+            while True: await self.callback_on_pair_update_async_part(*(await self.queue.get()))
+
     def callback_on_pair_update(self, pair: Pair):
-        if trend := self.trend_detector.detect(pair): self.bot.run_coroutine_threadsafe(self.callback_on_pair_update_async_part(pair, trend))
+        if trend := self.trend_detector.detect(pair):
+            logger.info(f'Detected trend in {pair.pretty_symbol}: {trend.change:+.1%}')
+            self.tasks.run_coroutine_threadsafe(self.queue.put((pair, trend)))
 
     async def callback_on_pair_update_async_part(self, pair: Pair, trend: Trend):
         message = TrendMessage(pair, trend)
