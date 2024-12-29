@@ -45,9 +45,6 @@ class Bot:
         await self.application.stop()
         await self.application.shutdown()
 
-    def is_silent(self, bot: TelegramBot):
-        return bot is self.bot_silent
-
     async def set_description(self, description):
         await self.bot.set_my_short_description(description)
         await self.bot_silent.set_my_short_description(description)
