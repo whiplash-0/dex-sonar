@@ -21,25 +21,24 @@ def ceil_timestamp_minute(ts: datetime) -> datetime:
 @dataclass
 class _TimeUnit:
     name: str
-    short_name: str
     time: timedelta
 
-    def format_units(self, units: int, shorten: bool = False) -> str:
-        return f'{units} {self.name if not shorten else self.short_name}{"" if units == 1 else "s"}'
+    def format(self, units: int, shorten: bool = False) -> str:
+        return f'{units}{(" " if not shorten else "")}{self.name if not shorten else self.name[0]}{"" if units == 1 or shorten else "s"}'
 
 _time_units = [
     _TimeUnit(*x) for x in
     [
-        ('second', 'sec', timedelta(seconds=1)),
-        ('minute', 'min', timedelta(minutes=1)),
-        ('hour', 'hour', timedelta(hours=1)),
-        ('day', 'day', timedelta(days=1)),
-        ('month', 'month', timedelta(days=30)),
-        ('year', 'year', timedelta(days=365)),
+        ('second', timedelta(seconds=1)),
+        ('minute', timedelta(minutes=1)),
+        ('hour', timedelta(hours=1)),
+        ('day', timedelta(days=1)),
+        ('month', timedelta(days=30)),
+        ('year', timedelta(days=365)),
     ]
 ]
 
 def format_timedelta(td: timedelta, shorten: bool = False) -> str:
     for tu in reversed(_time_units):
-        if td >= tu.time: return tu.format_units(td // tu.time, shorten)
-    return _time_units[0].format_units(0, shorten)
+        if td >= tu.time: return tu.format(td // tu.time, shorten)
+    return _time_units[0].format(0, shorten)
