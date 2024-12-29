@@ -59,16 +59,10 @@ class Application:
     async def run_loop_updating_status(self, interval: timedelta):
         try:
             while True:
-                await self.update_bot_status()
+                await self.bot.set_description(f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start), shorten=True)}')
                 await asyncio.sleep(interval.total_seconds())
         finally:
-            await self.clear_bot_status()
-
-    async def update_bot_status(self):
-        await self.bot.set_description(f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start), shorten=True)}')
-
-    async def clear_bot_status(self):
-        await self.bot.remove_description()
+            await self.bot.remove_description()
 
     async def run_loop_trend_detection(self):
         with self.pairs.subscribe_to_stream():
