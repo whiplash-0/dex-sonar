@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from typing import Callable
+from typing import Callable, Iterable, Iterator
 
 from pybit.unified_trading import HTTP, WebSocket
 
@@ -9,15 +9,12 @@ from dex_sonar.pair import Pair, Symbol, TimeSeries
 from dex_sonar.pybit_converters import Response, convert_get_kline, convert_get_tickers, convert_stream_kline, convert_stream_ticker
 
 
-Pairs = list[Pair]
-
-
 class LivePairs:
     def __init__(
             self,
             update_frequency: timedelta = timedelta(seconds=10),
             callback_on_update: Callable[[Pair], None] = lambda _: None,
-            include_filter: Callable[[Pairs], Pairs] = lambda pairs: sorted(pairs, key=lambda x: x.turnover, reverse=True)[:10],
+            include_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda pairs: sorted(pairs, key=lambda x: x.turnover, reverse=True)[:10],
     ):
         self.pairs: dict[Symbol, Pair] = {}
         self.include_filter = include_filter
@@ -30,7 +27,7 @@ class LivePairs:
     def __len__(self):
         return len(self.pairs)
 
-    def __iter__(self) -> Pairs:
+    def __iter__(self) -> Iterator[Pair]:
         return iter(self.pairs.values())
 
     def __getitem__(self, key) -> Pair:
