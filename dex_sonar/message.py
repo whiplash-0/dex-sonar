@@ -79,7 +79,7 @@ class TrendMessage(Message):
             height_ratio=0.5,
 
             colors=[
-                ('#4287f5', 0, trend.start - 1),
+                ('#4287f5', 0, trend.start),
                 ('#ff367c', trend.start, pair.prices.get_last_index()),
             ],
             price_as_percent=True,
