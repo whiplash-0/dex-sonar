@@ -3,8 +3,11 @@ from datetime import timedelta
 from os import getcwd, path
 
 
+CONFIGS_DIR = 'configs'
+
+
 class Config(ConfigParser):
-    def read(self, file_name, directory_path='configs', **kwargs):
+    def read(self, file_name, directory_path=CONFIGS_DIR, **kwargs):
         super().read(path.join(getcwd(), directory_path, file_name))
 
     def getint(self, section, option, default: int = None, **kwargs) -> int | None:

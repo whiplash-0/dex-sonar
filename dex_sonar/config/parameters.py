@@ -1,8 +1,10 @@
 import logging
 from os import environ
 
-from dex_sonar.config.config import config
+from dex_sonar.config.config import CONFIGS_DIR as SOURCE_CONFIGS_DIR, config
 
+
+CONFIGS_DIR = SOURCE_CONFIGS_DIR
 
 TESTING_MODE = config.getboolean('Bot', 'testing_mode')
 PRODUCTION_MODE = not TESTING_MODE
