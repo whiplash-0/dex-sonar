@@ -20,11 +20,11 @@ class LivePairs:
             include_filter: Callable[[Pairs], Pairs] = lambda pairs: pairs,
     ):
         self.pairs: dict[Symbol, Pair] = {}
-        self.requests = HTTP(testnet=False)
+        self.include_filter = include_filter
         self.update_frequency = update_frequency
         self.callback_on_update = callback_on_update
         self.last_update: dict[Symbol, datetime] = {}
-        self.include_filter = include_filter
+        self.requests = HTTP(testnet=False)
         self._init()
 
     def __len__(self):
