@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from aiogram.utils import markdown
 from matplotlib import pyplot as plt
 
+from dex_sonar import time
 from dex_sonar.bot import ImageBuffer, Text
 from dex_sonar.pair import Pair
 from dex_sonar.trend_detector import Trend
@@ -62,7 +63,8 @@ class TrendMessage(Message):
             if len(strings) == 1: lines.append(strings[0])
             else: lines.append(f'{strings[0]}{" " * (self.LINE_WIDTH - len(strings[0]) - len(strings[1]))}{strings[1]}')
 
-        add_line(pair.pretty_symbol, f'{trend.change:+.1%}')
+        duration = time.format_timedelta(pair.prices.get_timestamp(trend.end) - pair.prices.get_timestamp(trend.start), shorten=True)
+        add_line(pair.pretty_symbol, f'{trend.change:+.1%}/{duration}')
         add_line('Price:', '$' + format_number_by_significant_digits(pair.price, digits=4))
         add_line('Turnover:', '$' + format_large_number(pair.turnover, decimal_places=1))
         add_line('Open interest:', format_large_number(pair.open_interest, decimal_places=0))
