@@ -35,16 +35,28 @@ class Application:
                 ),
                 key=lambda x: x.turnover,
                 reverse=True,
-            )[:100],
+            )[:(
+                100
+                if parameters.PRODUCTION_MODE else
+                5
+            )],
             mute_list_file_name='mute_list.txt',
         )
         self.trend_detector = TrendDetector(
-            max_range=15,
-            absolute_change_threshold=utils.get_line(
-                (1,  0.01 * 0.5),
-                (15, 0.01 * 1),
+            max_range=30,
+            absolute_change_threshold=(
+                utils.get_monotone_parabola(
+                    (1,  0.01 * 2),
+                    (10, 0.01 * 3.5),
+                    (30, 0.01 * 5),
+                    visualize=True,
+                )
+                if parameters.PRODUCTION_MODE else
+                lambda _: 0.01
             ),
-            turnover_multiplier=lambda x: 1 + 1 * (math.log10(self.pairs['BTCUSDT'].turnover) - math.log10(x)),
+            turnover_multiplier=(
+                lambda x: 1 / (2 ** (1.5 * (math.log10(x) - math.log10(100_000_000))))
+            ),
         )
         self.tasks = AsyncInfiniteTasks(
             self.run_loop_updating_status(interval=timedelta(minutes=1)),
