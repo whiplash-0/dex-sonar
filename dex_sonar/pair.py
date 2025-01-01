@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum, auto
 from typing import Iterable, Optional
 
@@ -76,6 +76,7 @@ class Pair:
             hide_turnover_ticks=False,
             time_on_top=False,
             timestamp_format='%H:%M',
+            timezone_: timezone = timezone.utc,
 
             size_price=1.0,
             size_turnover=1.0,
@@ -146,7 +147,7 @@ class Pair:
         ax2.tick_params(axis='y', labelsize=10 * 1.1 * size * size_tick, colors=(0, 0, 0, alpha_tick))
 
         # format ticks
-        ax1.xaxis.set_major_formatter(DateFormatter(timestamp_format))
+        ax1.xaxis.set_major_formatter(DateFormatter(timestamp_format, tz=timezone_))
         ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,g}') if not price_as_percent else PercentFormatter(xmax=self.prices[-1], decimals=1))
         ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,.0f}') if not turnover_as_percent else PercentFormatter(xmax=self.turnovers[-1]))
 

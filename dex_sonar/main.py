@@ -3,6 +3,8 @@ import logging
 import math
 from datetime import timedelta
 
+from dateutil import tz
+
 from dex_sonar import time, utils
 from dex_sonar.async_infinite_tasks import AsyncInfiniteTasks
 from dex_sonar.bot import Bot
@@ -93,7 +95,11 @@ class Application:
                 self.tasks.run_coroutine_threadsafe(self.queue.put((pair, trend)))
 
     async def callback_on_pair_update_async_part(self, pair: Pair, trend: Trend):
-        message = TrendMessage(pair, trend)
+        message = TrendMessage(
+            pair,
+            trend,
+            timezone_=tz.gettz('Europe/Prague')
+        )
         await self.bot.send_message(
             parameters.USER_ID,
             message.get_text(),
