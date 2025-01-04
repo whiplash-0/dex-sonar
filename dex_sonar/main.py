@@ -59,12 +59,13 @@ class Application:
             turnover_multiplier=(
                 lambda x: 1 / (2 ** (1.5 * (math.log10(x) - math.log10(100_000_000))))
             ),
+            weak_trend_threshold=0.9,
+            cooldown=timedelta(minutes=30),
         )
         self.tasks = AsyncInfiniteTasks(
             self.run_loop_updating_status(interval=timedelta(minutes=1)),
             self.run_loop_trend_detection(),
         )
-        self.detection_cooldown = timedelta(hours=1)
         self.start = time.get_timestamp()
         self.queue = asyncio.Queue()
 
@@ -89,10 +90,9 @@ class Application:
                 logger.info(f'Callback executed. Left: {self.queue.qsize()}')
 
     def callback_on_pair_update(self, pair: Pair):
-        if time.get_time_passed_since(self.trend_detector.get_last_detection_time(pair)) >= self.detection_cooldown:
-            if trend := self.trend_detector.detect(pair):
-                logger.info(f'Detected trend in {pair.pretty_symbol}: {trend.change:+.1%}')
-                self.tasks.run_coroutine_threadsafe(self.queue.put((pair, trend)))
+        if trend := self.trend_detector.detect(pair):
+            logger.info(f'Detected trend in {pair.pretty_symbol}: {trend.change:+.1%}{"" if trend.is_normal else " (weak)"}')
+            self.tasks.run_coroutine_threadsafe(self.queue.put((pair, trend)))
 
     async def callback_on_pair_update_async_part(self, pair: Pair, trend: Trend):
         message = TrendMessage(
@@ -101,10 +101,10 @@ class Application:
             timezone_=tz.gettz('Europe/Prague')
         )
         await self.bot.send_message(
-            parameters.USER_ID,
-            message.get_text(),
-            message.get_image(),
-            silent=self.pairs.is_muted(pair),
+            user=parameters.USER_ID,
+            text=message.get_text(),
+            image=message.get_image(),
+            silent=self.pairs.is_muted(pair) or trend.is_weak,
         )
 
 
