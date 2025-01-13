@@ -2,3 +2,4 @@
 
 heroku config:set $(tr '\n' ' ' <<< "$(cat .env)")
 git push -f heroku "${1:-main}":main
+heroku ps:scale worker=1
