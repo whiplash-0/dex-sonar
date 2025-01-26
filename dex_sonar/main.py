@@ -83,10 +83,10 @@ class Application:
             await self.bot.remove_description()
 
     async def run_loop_trend_detection(self):
-        with self.pairs.subscribe_to_stream():
-            while True:
-                await self.callback_on_pair_update_async_part(*(await self.queue.get()))
-                logger.info(f'Callback executed. Left: {self.queue.qsize()}')
+        self.pairs.subscribe_to_stream()
+        while True:
+            await self.callback_on_pair_update_async_part(*(await self.queue.get()))
+            logger.info(f'Callback executed. Left: {self.queue.qsize()}')
 
     def callback_on_pair_update(self, pair: Pair):
         if trend := self.trend_detector.detect(pair):

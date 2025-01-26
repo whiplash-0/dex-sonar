@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Callable, Iterable, Optional
 
@@ -19,30 +18,25 @@ class LivePairs(Pairs):
             mute_list_file_name: Optional[paths.FileName] = None,
     ):
         super().__init__()
-        self.mute_list: set[Pair] = set()
-        self.include_filter = include_filter
+
         self.update_frequency = update_frequency
         self.callback_on_update = callback_on_update
-        self.last_update: dict[Symbol, datetime] = {}
+        self.include_filter = include_filter
+
         self.requests = HTTP(testnet=False)
+        self.websocket = WebSocket(
+            testnet=False,
+            channel_type='linear',
+        )
+        self.last_update: dict[Symbol, datetime] = {}
+        self.mute_list: set[Pair] = set()
+
         self._init(mute_list_file_name)
 
-    @contextmanager
     def subscribe_to_stream(self):
-        ws = None
-
-        try:
-            ws = WebSocket(
-                testnet=False,
-                channel_type='linear',
-            )
-            self._update_klines()
-            ws.kline_stream(1, self.get_symbols(), self._handle_kline_update)
-            ws.ticker_stream(self.get_symbols(), self._handle_ticker_update)
-            yield
-
-        finally:
-            ws.exit()
+        self._update_klines()
+        self.websocket.kline_stream(1, self.get_symbols(), self._handle_kline_update)
+        self.websocket.ticker_stream(self.get_symbols(), self._handle_ticker_update)
 
     def is_muted(self, pair: Pair):
         return pair in self.mute_list
