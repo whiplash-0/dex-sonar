@@ -40,28 +40,38 @@ class TrendDetector:
         self.last_detection: dict[(Pair, bool), datetime] = {}
 
     def detect(self, pair: Pair) -> Optional[Trend]:
-        if self._is_in_cooldown(pair):
+        if self._is_in_cooldown(pair, is_weak=False):
             return None
 
         prices = pair.prices
+        max_range_ = min(self.max_range, len(prices) - 1)
+        changes = [abs((pair.price - x) / x) for x in prices[-2:-max_range_ - 1 - 1:-1]]
+        thresholds = [self.absolute_change_threshold(i + 1) * self.turnover_multiplier(pair.turnover) for i, x in enumerate(changes)]
 
-        for range_ in range(2, min(self.max_range + 1, len(prices))):
-            change = (pair.price - prices[-range_]) / prices[-range_]
-            change_threshold = self.absolute_change_threshold(range_) * self.turnover_multiplier(pair.turnover)
 
-            if abs(change) >= change_threshold * self.weak_trend_threshold:
-                is_weak = abs(change) < change_threshold
+        indices = [i for i, (x, y) in enumerate(zip(changes, thresholds)) if x >= y]
+        change_index = indices[-1] if indices else None
+        is_weak = None
 
-                if is_weak and self._is_in_cooldown(pair, is_weak=is_weak):
-                    continue
+        if change_index is not None:
+            is_weak = False
 
-                self.last_detection[pair, is_weak] = time.get_timestamp()
-                return Trend(
-                    change=change,
-                    start=prices.get_last_index() - range_ + 1,
-                    end=prices.get_last_index(),
-                    is_weak=is_weak,
-                )
+        elif not self._is_in_cooldown(pair, is_weak=True):
+            indices = [i for i, (x, y) in enumerate(zip(changes, thresholds)) if x >= y * self.weak_trend_threshold]
+            change_index = indices[-1] if indices else None
+
+            if change_index is not None:
+                is_weak = True
+
+
+        if change_index is not None:
+            self.last_detection[pair, is_weak] = time.get_timestamp()
+            return Trend(
+                change=changes[change_index],
+                start=prices.get_normalized_index(-change_index - 2),
+                end=prices.get_last_index(),
+                is_weak=is_weak,
+            )
 
         return None
 
