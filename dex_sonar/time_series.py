@@ -18,7 +18,7 @@ class InvalidTimeRange(Exception):
         else: super().__init__(f'Can\'t update time series {ts_start} - {ts_end} with range {interval}{message}')
 
 
-class TimeSeries(Generic[Value]):
+class TimeSeries(Sequence, Generic[Value]):
     def __init__(   self, step: Timestep):
         self.values: Values = []
         self.start: Timestamp = None
