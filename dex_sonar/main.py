@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import math
 from datetime import timedelta
 
 from dateutil import tz
@@ -46,18 +45,8 @@ class Application:
         )
         self.trend_detector = TrendDetector(
             max_range=30,
-            absolute_change_threshold=(
-                utils.get_monotone_parabola(
-                    (1,  0.01 * 2),
-                    (10, 0.01 * 3.5),
-                    (30, 0.01 * 5),
-                )
-                if parameters.PRODUCTION_MODE else
-                lambda _: 0.01
-            ),
-            turnover_multiplier=(
-                lambda x: 1 / (2 ** (1.5 * (math.log10(x) - math.log10(100_000_000))))
-            ),
+            absolute_change_threshold=utils.create_linear_piecewise_interpolation((1, 0.035), (5, 0.05), (10, 0.06), (30, 0.08)) if parameters.PRODUCTION_MODE else lambda _: 0.001,
+            turnover_multiplier=utils.create_turnover_based_log_scaling(base=1e9, low_scale=1.2, high_scale=4),
             weak_trend_threshold=0.9,
             cooldown=timedelta(minutes=30),
         )

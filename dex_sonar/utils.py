@@ -1,34 +1,26 @@
+from math import log10
 from typing import Callable
 
-import numpy as np
-from matplotlib import pyplot as plt
+
+UnaryFunction = Callable[[float], float]
 
 
-Function = Callable[[float], float]
+def create_linear_piecewise_interpolation(*points) -> UnaryFunction:
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+
+    def linear_piecewise_function(x):
+        for i in range(len(xs) - 1):
+            if xs[i] <= x <= xs[i + 1]:
+                x1, y1 = xs[i], ys[i]
+                x2, y2 = xs[i + 1], ys[i + 1]
+                return y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+
+        raise ValueError(f'{x} is outside of interpolation range.')
+
+    return linear_piecewise_function
 
 
-def get_line(p1, p2) -> Function:
-    m = (p2[1] - p1[1]) / (p2[0] - p1[0])
-    b = p1[1] - m * p1[0]
-    return lambda x: m * x + b
-
-
-def get_monotone_parabola(p1, p2, p3, visualize=False) -> Function:
-    x, y = np.array([p1, p2, p3]).T
-    A = np.array([x ** 2, x, np.ones(3)]).T
-    a, b, c = np.linalg.solve(A, y)
-    f = lambda x: a * x ** 2 + b * x + c
-    x_vertex = -b / (2 * a)
-
-    if x.min() <= x_vertex <= x.max():
-        raise ValueError(f'Defined parabola is not monotone in given range (x_vertex={x_vertex}). Choose another points')
-
-    if visualize:
-        x = range(int(x.min()), int(x.max()) + 1)
-        plt.title(f'Parabola in given range (x_vertex={x_vertex:.2f})')
-        plt.plot(x, [f(x) for x in x])
-        plt.axhline(0, color='black', linewidth=0.5)
-        plt.axvline(0, color='black', linewidth=0.5)
-        plt.grid(True)
-
-    return f
+def create_turnover_based_log_scaling(base, low_scale, high_scale) -> UnaryFunction:
+    return lambda x: 1 / (
+            (low_scale if x < base else high_scale) ** (log10(x) - log10(base))
+    )
