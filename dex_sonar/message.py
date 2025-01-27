@@ -68,7 +68,6 @@ class TrendMessage(Message):
         add_line(pair.pretty_symbol, f'{trend.change:+.1%}/{duration}')
         add_line('Price:', '$' + format_number_by_significant_digits(pair.price, digits=4))
         add_line('Turnover:', '$' + format_large_number(pair.turnover, decimal_places=1))
-        add_line('Open interest:', format_large_number(pair.open_interest, decimal_places=0))
         add_line('Funding rate:', format_number_by_significant_digits(pair.funding_rate * 100, digits=1) + '%')
 
         text = markdown.code('\n'.join(lines)) + '\n' + markdown.code(' ' * 24) + markdown.link('Trade on Bybit', f'https://www.bybit.com/trade/usdt/{pair.symbol}')
