@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Callable, Iterable, Optional
 
@@ -7,6 +8,9 @@ from dex_sonar import paths, time
 from dex_sonar.pair import Pair, Symbol, TimeSeries
 from dex_sonar.pairs import Pairs
 from dex_sonar.pybit_converters import Response, convert_get_kline, convert_get_tickers, convert_stream_kline, convert_stream_ticker
+
+
+logger = logging.getLogger(__name__)
 
 
 class LivePairs(Pairs):
@@ -105,36 +109,45 @@ class LivePairs(Pairs):
         )
 
     def _handle_kline_update(self, response: Response):
-        if response['data'][0]['confirm']:
-            kline = convert_stream_kline(response)
-            self[kline.symbol].prices.update(
-                kline.close,
-                time.ceil_timestamp_minute(kline.end),
-                is_final=True,
-            )
-            self[kline.symbol].turnovers.update(
-                kline.turnover,
-                time.ceil_timestamp_minute(kline.end),
-                is_final=True,
-            )
+        try:
+            if response['data'][0]['confirm']:
+                kline = convert_stream_kline(response)
+
+                self[kline.symbol].prices.update(
+                    kline.close,
+                    time.ceil_timestamp_minute(kline.end),
+                    is_final=True,
+                )
+                self[kline.symbol].turnovers.update(
+                    kline.turnover,
+                    time.ceil_timestamp_minute(kline.end),
+                    is_final=True,
+                )
+
+        except Exception:
+            logger.exception('Caught pybit callback exception:'); raise
 
     def _handle_ticker_update(self, response: Response):
-        symbol = response['data']['symbol']
+        try:
+            symbol = response['data']['symbol']
 
-        if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency:
-            self.last_update[symbol] = time.get_timestamp()
-            ticker = convert_stream_ticker(response)
-            pair = self[symbol]
+            if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency:
+                self.last_update[symbol] = time.get_timestamp()
+                ticker = convert_stream_ticker(response)
+                pair = self[symbol]
 
-            pair.prices.update(
-                ticker.price,
-                time.ceil_timestamp_minute(ticker.timestamp),
-            )
-            pair.update(
-                turnover=ticker.turnover,
-                open_interest=ticker.open_interest,
-                funding_rate=ticker.funding_rate,
-                next_funding_time=ticker.next_funding_time,
-            )
+                pair.prices.update(
+                    ticker.price,
+                    time.ceil_timestamp_minute(ticker.timestamp),
+                )
+                pair.update(
+                    turnover=ticker.turnover,
+                    open_interest=ticker.open_interest,
+                    funding_rate=ticker.funding_rate,
+                    next_funding_time=ticker.next_funding_time,
+                )
 
-            self.callback_on_update(pair)
+                self.callback_on_update(pair)
+
+        except Exception:
+            logger.exception('Caught pybit callback exception:'); raise
