@@ -40,41 +40,46 @@ class TrendDetector:
         self.last_detection: dict[(Pair, bool), datetime] = {}
 
     def detect(self, pair: Pair) -> Optional[Trend]:
-        if self._is_in_cooldown(pair, is_weak=False):
-            return None
+        if not self._is_in_cooldown(pair):
 
-        prices = pair.prices
-        max_range_ = min(self.max_range, len(prices) - 1)
-        changes = [abs((pair.price - x) / x) for x in prices[-2:-max_range_ - 1 - 1:-1]]
-        thresholds = [self.absolute_change_threshold(i + 1) * self.turnover_multiplier(pair.turnover) for i, x in enumerate(changes)]
+            # calculate changes and minimal thresholds over given time range
+            prices = pair.prices
+            max_range_ = min(self.max_range, len(prices) - 1)
+            changes = [(pair.price - x) / x for x in prices[-2:-max_range_ - 1 - 1:-1]]
+            thresholds = [self.absolute_change_threshold(1 + i) * self.turnover_multiplier(pair.turnover) for i in range(len(changes))]  # align ordinal with minute duration that function accepts by adding 1
 
+            # find indices where changes are above corresponding thresholds
+            is_weak = None
 
-        indices = [i for i, (x, y) in enumerate(zip(changes, thresholds)) if x >= y]
-        change_index = indices[-1] if indices else None
-        is_weak = None
-
-        if change_index is not None:
-            is_weak = False
-
-        elif not self._is_in_cooldown(pair, is_weak=True):
-            indices = [i for i, (x, y) in enumerate(zip(changes, thresholds)) if x >= y * self.weak_trend_threshold]
-            change_index = indices[-1] if indices else None
-
-            if change_index is not None:
+            if (change_index := self._find_exceeding_change_index(changes, thresholds)) is not None:  # check normal trend
+                is_weak = False
+            elif (  # else check weak trend
+                    not self._is_in_cooldown(pair, is_weak=True)
+                    and (change_index := self._find_exceeding_change_index(changes, thresholds, weak_threshold=True)) is not None
+            ):
                 is_weak = True
 
-
-        if change_index is not None:
-            self.last_detection[pair, is_weak] = time.get_timestamp()
-            return Trend(
-                change=changes[change_index],
-                start=prices.get_normalized_index(-change_index - 2),
-                end=prices.get_last_index(),
-                is_weak=is_weak,
-            )
+            # create trend
+            if change_index is not None:
+                self.last_detection[pair, is_weak] = time.get_timestamp()
+                return Trend(
+                    change=changes[change_index],
+                    start=prices.get_normalized_index(-change_index - 2),
+                    end=prices.get_last_index(),
+                    is_weak=is_weak,
+                )
 
         return None
 
-    def _is_in_cooldown(self, pair: Pair, is_weak=False):
+    def _find_exceeding_change_index(self, changes, thresholds, weak_threshold=False) -> Optional[Index]:
+        threshold_multiplier = 1 if not weak_threshold else self.weak_trend_threshold
+        indices = [
+            i
+            for i, (x, y) in enumerate(zip(changes, thresholds))
+            if abs(x) >= y * threshold_multiplier
+        ]
+        return indices[-1] if indices else None  # use first (shortest) change that satisfies condition
+
+    def _is_in_cooldown(self, pair, is_weak=False):
         last_detection_time = self.last_detection.get((pair, is_weak), time.MIN_TIMESTAMP)
         return time.get_time_passed_since(last_detection_time) <= self.cooldown
