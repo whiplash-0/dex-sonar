@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import Enum, auto
 from typing import Callable, Optional
 
 from src import time
@@ -23,6 +24,12 @@ class Trend:
         return not self.is_weak
 
 
+class Mode(Enum):
+    BOTH = auto()
+    UPTREND = auto()
+    DOWNTREND = auto()
+
+
 class TrendDetector:
     def __init__(
             self,
@@ -31,12 +38,14 @@ class TrendDetector:
             turnover_multiplier: Callable[[Turnover], float] = lambda _: 1,
             weak_trend_threshold: Change = 1,
             cooldown: timedelta = timedelta(),
+            mode: Mode = Mode.BOTH,
     ):
         self.max_range = max_range
         self.absolute_change_threshold = absolute_change_threshold
         self.turnover_multiplier = turnover_multiplier
         self.weak_trend_threshold = weak_trend_threshold
         self.cooldown = cooldown
+        self.mode = mode
         self.last_detection: dict[(Pair, bool), datetime] = {}
 
     def detect(self, pair: Pair) -> Optional[Trend]:
@@ -46,6 +55,10 @@ class TrendDetector:
             prices = pair.prices
             max_range_ = min(self.max_range, len(prices) - 1)
             changes = [(pair.price - x) / x for x in prices[-2:-max_range_ - 1 - 1:-1]]
+
+            if self.mode is not Mode.BOTH:  # trick to make mode work and include only relevant changes
+                changes = [max(x, 0) if self.mode is Mode.UPTREND else min(x, 0) for x in changes]
+
             thresholds = [self.absolute_change_threshold(1 + i) * self.turnover_multiplier(pair.turnover) for i in range(len(changes))]  # align ordinal with minute duration that function accepts by adding 1
 
             # find indices where changes are above corresponding thresholds

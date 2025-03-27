@@ -14,7 +14,7 @@ from src.live_pairs import LivePairs
 from src.logs import setup_logging
 from src.message import TrendMessage
 from src.pair import Contract, Pair
-from src.trend_detector import Trend, TrendDetector
+from src.trend_detector import Mode, Trend, TrendDetector
 
 
 setup_logging()
@@ -50,6 +50,7 @@ class Application:
             turnover_multiplier=utils.create_turnover_based_log_scaling(base=1e9, low_scale=1.2, high_scale=4),
             weak_trend_threshold=0.9,
             cooldown=timedelta(hours=2),
+            mode=Mode.UPTREND,
         )
         self.tasks = AsyncInfiniteTasks(
             self.run_loop_updating_status(interval=timedelta(minutes=1)),
