@@ -27,6 +27,9 @@ class Config(ConfigParser):
 
 
 config = Config()
+
 config.read('config.ini')
 config.read('dev.ini')
-if config.getboolean('Bot', 'testing_mode'): config.read('testing.ini')
+
+TEST_MODE = config.getboolean('Bot', 'test_mode')
+if TEST_MODE: config.read('test.ini')
