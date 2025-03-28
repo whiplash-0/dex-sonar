@@ -12,7 +12,7 @@ SILENT_BOT_TOKEN = environ.get('SILENT_BOT_TOKEN' if PROD_MODE else 'TESTING_SIL
 USER_ID = int(environ.get('USER_ID'))
 
 LOGGING_FORMAT = (
-    '%(name)s :: %(levelname)s :: %(message)s'
+    '%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s'
     if PROD_MODE else
     '%(asctime)s :: %(name)s :: %(message)s'
 )
