@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from enum import Enum, auto
 from typing import Callable, Optional
 
-from src.core.time_series import Index
 from src.pairs.pair import Pair, Turnover
+from src.support.time_series import Index
 from src.utils import time
 
 

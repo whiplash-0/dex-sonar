@@ -9,11 +9,11 @@ from src.config import parameters
 from src.config.config import config
 from src.core.async_infinite_tasks import AsyncInfiniteTasks
 from src.core.bot import Bot
-from src.core.logs import setup_logging
 from src.core.message import TrendMessage
 from src.core.trend_detector import Mode, Trend, TrendDetector
 from src.pairs.live_pairs import LivePairs
 from src.pairs.pair import Contract, Pair
+from src.support.logs import setup_logging
 from src.utils import time, utils
 
 
