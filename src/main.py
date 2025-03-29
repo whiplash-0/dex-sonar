@@ -101,7 +101,7 @@ class Application:
 
     def callback_on_pair_update(self, pair: Pair):
         if trend := self.trend_detector.detect(pair):
-            logger.info(f'Detected trend in {pair.pretty_symbol}: {trend.change:+.1%}{"" if trend.is_normal else " (weak)"}')
+            logger.info(f'{pair.pretty_symbol}: {trend.change:+.1%}{"" if trend.is_normal else " (weak)"}')
             self.tasks.run_coroutine_threadsafe(self.queue.put((pair, trend)))
 
     async def callback_on_pair_update_async_part(self, pair: Pair, trend: Trend):
