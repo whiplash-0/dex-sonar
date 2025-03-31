@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 from datetime import timedelta
 from os import getcwd, path
+from zoneinfo import ZoneInfo
 
 
 CONFIGS_DIR = 'configs'
@@ -24,6 +25,9 @@ class Config(ConfigParser):
 
     def get_timedelta_from_hours(self, section, option, default: timedelta = None, **kwargs) -> timedelta | None:
         return timedelta(hours=self.getint(section, option, **kwargs)) if self.get(section, option, **kwargs) else default
+
+    def get_timezone(self, section, option, default: ZoneInfo = None, **kwargs) -> ZoneInfo | None:
+        return ZoneInfo(self.get(section, option, **kwargs)) if self.get(section, option, **kwargs) else default
 
 
 config = Config()
