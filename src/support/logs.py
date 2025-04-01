@@ -8,10 +8,12 @@ from zoneinfo import ZoneInfo
 import colorama
 from colorama import Fore
 
-from src.config import parameters
 
+VERBOSE = floor(mean([
+    logging.INFO,
+    logging.WARNING,
+]))
 
-VERBOSE = floor(mean([logging.INFO, logging.WARNING]))
 
 def verbose(self, msg, *args, **kwargs):
     if self.isEnabledFor(VERBOSE):
@@ -30,7 +32,12 @@ class ColoredFormatter(Formatter):
         }[record.levelno] + super().format(record)
 
 
-def setup_logging(timezone: tzinfo = ZoneInfo('UTC')):
+def setup_logging(
+        level: str,
+        format: str,
+        timestamp_format: str,
+        timezone: tzinfo = ZoneInfo('UTC'),
+):
     logging.Formatter.converter = lambda *args: datetime.now(timezone).timetuple()
 
     colorama.init(autoreset=True)
@@ -38,11 +45,11 @@ def setup_logging(timezone: tzinfo = ZoneInfo('UTC')):
     logging.Logger.verbose = verbose
 
     root_logger = getLogger()
-    root_logger.setLevel(level=parameters.LOGGING_LEVEL)
+    root_logger.setLevel(level=level)
 
     handler = StreamHandler()
-    handler.setLevel(parameters.LOGGING_LEVEL)
-    handler.setFormatter(ColoredFormatter(parameters.LOGGING_FORMAT, datefmt=parameters.LOGGING_TIMESTAMP_FORMAT))
+    handler.setLevel(level)
+    handler.setFormatter(ColoredFormatter(format, datefmt=timestamp_format))
     root_logger.addHandler(handler)
 
     getLogger('asyncio').setLevel(logging.WARNING)

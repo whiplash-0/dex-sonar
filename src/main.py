@@ -17,7 +17,12 @@ from src.support import logs
 from src.utils import time, utils
 
 
-logs.setup_logging(timezone=config.get_timezone('Logging', 'timezone'))
+logs.setup_logging(
+    level=logging.INFO if not config.getboolean('Logging', 'debug') else logging.DEBUG,
+    format=config.get('Logging', 'format'),
+    timestamp_format=config.get('Logging', 'timestamp format'),
+    timezone=config.get_timezone('Logging', 'timezone'),
+)
 logger = logging.getLogger(__name__)
 
 
