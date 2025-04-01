@@ -42,7 +42,6 @@ class Application:
                 if parameters.PROD_MODE else
                 5
             )],
-            mute_list_file_name='mute_list.txt',
         )
         self.trend_detector = TrendDetector(
             max_range=30,
@@ -114,7 +113,7 @@ class Application:
             user=parameters.USER_ID,
             text=message.get_text(),
             image=message.get_image(),
-            silent=self.pairs.is_muted(pair) or trend.is_weak,
+            silent=trend.is_weak,
         )
 
 
