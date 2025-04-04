@@ -6,7 +6,7 @@ from datetime import timedelta
 from dateutil import tz
 
 from src.config import parameters
-from src.config.config import config
+from src.config.config import CONFIG
 from src.core.async_infinite_tasks import AsyncInfiniteTasks
 from src.core.bot import Bot
 from src.core.message import TrendMessage
@@ -18,10 +18,10 @@ from src.utils import time, utils
 
 
 logs.setup_logging(
-    level=logging.INFO if not config.getboolean('Logging', 'debug') else logging.DEBUG,
-    format=config.get('Logging', 'format'),
-    timestamp_format=config.get('Logging', 'timestamp format'),
-    timezone=config.get_timezone('Logging', 'timezone'),
+    level=logging.INFO if not CONFIG.getboolean('Logging', 'debug') else logging.DEBUG,
+    format=CONFIG.get('Logging', 'format'),
+    timestamp_format=CONFIG.get('Logging', 'timestamp format'),
+    timezone=CONFIG.get_timezone('Logging', 'timezone'),
 )
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Application:
             token_silent=parameters.SILENT_BOT_TOKEN,
         )
         self.pairs = LivePairs(
-            update_frequency=config.get_timedelta_from_seconds('Pairs', 'update frequency'),
+            update_frequency=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency'),
             callback_on_update=self.callback_on_pair_update,
             include_filter=lambda pairs: sorted(
                 filter(

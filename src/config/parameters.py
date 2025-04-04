@@ -1,8 +1,9 @@
 from os import environ
 
-from src.config.config import CONFIGS_DIR, TEST_MODE  # noqa: F40
+from src.config.config import CONFIG
 
 
+TEST_MODE = CONFIG.getboolean('Bot', 'test mode')
 PROD_MODE = not TEST_MODE
 
 BOT_TOKEN = environ.get('BOT_TOKEN' if PROD_MODE else 'TESTING_BOT_TOKEN')

@@ -1,15 +1,24 @@
+import sys
 from configparser import RawConfigParser
 from datetime import timedelta
-from os import getcwd, path
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from src.utils.paths import Paths
 
-CONFIGS_DIR = 'configs'
+
+DEFAULT_PRESET = 'default'
+
+CONFIG = None
 
 
 class Config(RawConfigParser):
-    def read(self, file_name, directory_path=CONFIGS_DIR, **kwargs):
-        super().read(path.join(getcwd(), directory_path, file_name))
+    def __init__(self, directory_path: Path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.directory_path = directory_path
+        
+    def load(self, name: str, **kwargs):
+        self.read(self.directory_path / (name + '.ini'), **kwargs)
 
     def getint(self, section, option, default: int = None, **kwargs) -> int | None:
         return super().getint(section, option, **kwargs) if self.get(section, option, **kwargs) else default
@@ -30,10 +39,10 @@ class Config(RawConfigParser):
         return ZoneInfo(self.get(section, option, **kwargs)) if self.get(section, option, **kwargs) else default
 
 
-config = Config()
+_preset_path = Paths.CONFIGS / (DEFAULT_PRESET if len(sys.argv) == 1 else sys.argv[1])
+if len(sys.argv) > 1 and not _preset_path.exists(): raise ValueError(f"Preset doesn't exist: '{sys.argv[1]}' ({_preset_path})")
 
-config.read('config.ini')
-config.read('dev.ini')
-
-TEST_MODE = config.getboolean('Bot', 'test mode')
-if TEST_MODE: config.read('test.ini')
+CONFIG = Config(directory_path=_preset_path)
+CONFIG.load('config')
+CONFIG.load('dev')
+if CONFIG.getboolean('Bot', 'test mode'): CONFIG.load('test')
