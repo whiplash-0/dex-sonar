@@ -1,17 +1,17 @@
-from os import getcwd
-from os.path import join
-
-from src.config import parameters
+import inspect
+from pathlib import Path
 
 
-Path = str
-FileName = str
-Component = str
+CODE_DIRECTORY = 'src'
 
 
-def get_path(*components: Component) -> Path:
-    return join(getcwd(), *components)
+MODULE_PATH = Path(inspect.getfile(inspect.currentframe()))
+PROJECT_PATH = Path(*MODULE_PATH.parts[:MODULE_PATH.parts.index(CODE_DIRECTORY)])
 
 
-def get_config_path(file_name: FileName) -> Path:
-    return join(getcwd(), parameters.CONFIGS_DIR, file_name)
+class Paths:
+    CONFIGS = 'configs'
+
+
+for attribute, value in vars(Paths).items():
+    if not attribute.startswith('__'): setattr(Paths, attribute, PROJECT_PATH / value)
