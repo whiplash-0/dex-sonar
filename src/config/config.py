@@ -1,5 +1,6 @@
 import sys
 from configparser import RawConfigParser
+from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -13,12 +14,18 @@ CONFIG = None
 
 
 class Config(RawConfigParser):
-    def __init__(self, directory_path: Path, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.directory_path = None
+
+    @contextmanager
+    def within(self, directory_path: Path):
         self.directory_path = directory_path
+        yield
+        self.directory_path = None
         
-    def load(self, name: str, **kwargs):
-        self.read(self.directory_path / (name + '.ini'), **kwargs)
+    def read(self, name: str, **kwargs):
+        super().read(self.directory_path / (name + '.ini'), **kwargs)
 
     def getint(self, section, option, default: int = None, **kwargs) -> int | None:
         return super().getint(section, option, **kwargs) if self.get(section, option, **kwargs) else default
@@ -39,10 +46,15 @@ class Config(RawConfigParser):
         return ZoneInfo(self.get(section, option, **kwargs)) if self.get(section, option, **kwargs) else default
 
 
-_preset_path = Paths.CONFIGS / (DEFAULT_PRESET if len(sys.argv) == 1 else sys.argv[1])
-if len(sys.argv) > 1 and not _preset_path.exists(): raise ValueError(f"Preset doesn't exist: '{sys.argv[1]}' ({_preset_path})")
+CONFIG = Config()
+_presets = [DEFAULT_PRESET]
+if len(sys.argv) > 1: _presets.append(sys.argv[1])
 
-CONFIG = Config(directory_path=_preset_path)
-CONFIG.load('config')
-CONFIG.load('dev')
-if CONFIG.getboolean('Bot', 'test mode'): CONFIG.load('test')
+for preset_path in [Paths.CONFIGS / x for x in _presets]:
+    if not preset_path.exists():
+        raise ValueError(f"Preset doesn't exist: '{sys.argv[1]}' ({preset_path})")
+
+    with CONFIG.within(preset_path):
+        CONFIG.read('config')
+        CONFIG.read('dev')
+        if CONFIG.getboolean('Bot', 'test mode'): CONFIG.read('test')
