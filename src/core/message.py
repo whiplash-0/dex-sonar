@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from datetime import timezone
+from datetime import tzinfo
+from zoneinfo import ZoneInfo
 
 from aiogram.utils import markdown
 from matplotlib import pyplot as plt
@@ -29,7 +30,7 @@ class Message(ABC):
 
 
 class TrendMessage(Message):
-    def __init__(self, pair: Pair, trend: Trend, timezone_: timezone = timezone.utc):
+    def __init__(self, pair: Pair, trend: Trend, timezone: tzinfo = ZoneInfo('UTC')):
         # text
         lines = []
 
@@ -57,7 +58,7 @@ class TrendMessage(Message):
             ],
             price_as_percent=True,
             hide_turnover_ticks=True,
-            timezone_=timezone_,
+            timezone=timezone,
 
             size_price=3.3,
             size_turnover=1,

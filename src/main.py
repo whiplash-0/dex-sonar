@@ -105,7 +105,7 @@ class Application:
         message = TrendMessage(
             pair,
             trend,
-            timezone_=CONFIG.get_timezone('Chart', 'timezone')
+            timezone=CONFIG.get_timezone('Chart', 'timezone')
         )
         await self.bot.send_message(
             user=parameters.USER_ID,
