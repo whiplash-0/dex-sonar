@@ -19,7 +19,8 @@ class Pairs:
     def __repr__(self):
         return f'{self.__class__.__name__}({", ".join([x.pretty_symbol for x in self])})'
 
-    def update(self, pairs: Iterable[Pair]):
+    def update(self, pairs: Pair | Iterable[Pair]):
+        if isinstance(pairs, Pair): pairs = [pairs]
         self.pairs |= {x.symbol: x for x in pairs}
 
     def get_symbols(self) -> KeysView[Symbol]:
