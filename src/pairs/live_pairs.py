@@ -44,10 +44,10 @@ class LivePairs(Pairs):
         self.websocket.ticker_stream(self.get_symbols(), self._handle_ticker_update)
 
     def _init(self):
-        pairs = []
+        pairs = Pairs()
 
         for ticker in convert_get_tickers(self.requests.get_tickers(category='linear')):
-            pairs.append(Pair(
+            pairs.update(Pair(
                 symbol=ticker.symbol,
                 prices=TimeSeries(step=timedelta(minutes=1)),
                 turnovers=TimeSeries(step=timedelta(minutes=1)),
