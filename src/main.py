@@ -15,6 +15,7 @@ from src.pairs.live_pairs import LivePairs
 from src.pairs.pair import Contract, Pair
 from src.support import logs
 from src.utils import time, utils
+from src.utils.utils import format_large_number
 
 
 logs.setup_logging(
@@ -60,7 +61,7 @@ class Application:
 
     def run(self):
         logger.info('Starting bot')
-        logger.info('Pairs: ' + ', '.join([x.pretty_symbol for x in self.pairs]))
+        logger.info(f'Pairs (>${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)} by turnover): ' + ', '.join([x.pretty_symbol for x in self.pairs]))
         asyncio.run(self.bot.run(self.tasks.run()))
         logger.info('Stopping bot')
 
