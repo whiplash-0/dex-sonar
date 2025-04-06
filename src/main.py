@@ -45,7 +45,6 @@ class Application:
             max_range=30,
             absolute_change_threshold=utils.create_linear_piecewise_interpolation((1, 0.035), (5, 0.05), (10, 0.06), (30, 0.08)) if parameters.PROD_MODE else lambda _: 0.001,
             turnover_multiplier=utils.create_turnover_based_log_scaling(base=1e9, low_scale=1.2, high_scale=4),
-            weak_spike_threshold=0.9,
             cooldown=timedelta(hours=2),
             mode=Mode.UPSPIKE,
         )
@@ -101,7 +100,7 @@ class Application:
 
     def callback_on_pair_update(self, pair: Pair):
         if spike := self.spike_detector.detect(pair):
-            logger.info(f'{pair.pretty_symbol}: {spike.change:+.1%}{"" if spike.is_normal else " (weak)"}')
+            logger.info(f'{pair.pretty_symbol}: {spike.change:+.1%}')
             self.tasks.run_coroutine_threadsafe(self.queue.put((pair, spike)))
 
     async def callback_on_pair_update_async_part(self, pair: Pair, spike: Spike):
@@ -114,7 +113,6 @@ class Application:
             user=parameters.USER_ID,
             text=message.get_text(),
             image=message.get_image(),
-            silent=spike.is_weak,
         )
 
 
