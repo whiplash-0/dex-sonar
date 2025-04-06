@@ -4,14 +4,21 @@ from typing import Callable
 
 
 
-def format_number_by_significant_digits(x, digits=1):
+def format_number_by_significant_digits(x, significant_digits=1, decimal_places=0, keep_leading_zeros=False):
     if x == 0:
         return '0'
     else:
         magnitude = math.floor(math.log10(abs(x)))
-        factor = 10 ** (digits - magnitude - 1)
+        factor = 10 ** (significant_digits - magnitude - 1)
         x = round(x * factor) / factor
-        return f'{x:.0f}' if magnitude - digits + 1 >= 0 else f'{x:g}'
+        string = f'{x:.{decimal_places if decimal_places else max(0, -(magnitude - significant_digits + 1))}f}'
+
+        if not keep_leading_zeros and '.' in string:
+            integer_part, decimal_part = string.split('.')
+            decimal_part = decimal_part.rstrip('0').ljust(decimal_places, '0')
+            string = integer_part + ('.' + decimal_part if decimal_part else '')
+
+        return string
 
 
 UNIT_LETTERS = 'KMBTQ'
