@@ -40,9 +40,9 @@ class TrendMessage(Message):
 
         duration = time.format_timedelta(pair.prices.get_timestamp(trend.end) - pair.prices.get_timestamp(trend.start), shorten=True)
         add_line(pair.pretty_symbol, f'{trend.change:+.1%}/{duration}')
-        add_line('Price:', '$' + format_number_by_significant_digits(pair.price, significant_digits=4))
+        add_line('Price:', '$' + format_number_by_significant_digits(pair.price, significant_digits=3))
         add_line('Turnover:', '$' + format_large_number(pair.turnover, decimal_places=1, decrease_decimal_places=True))
-        add_line('Funding rate:', format_number_by_significant_digits(pair.funding_rate * 100, significant_digits=1) + '%')
+        add_line('Funding rate:', format_number_by_significant_digits(pair.funding_rate * 100, significant_digits=1, decimal_places=3) + '%')
 
         text = markdown.code('\n'.join(lines)) + '\n' + markdown.code(' ' * 24) + markdown.link('Trade on Bybit', f'https://www.bybit.com/trade/usdt/{pair.symbol}')
 
