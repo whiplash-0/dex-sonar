@@ -43,10 +43,10 @@ class Application:
         )
         self.spike_detector = SpikeDetector(
             mode=Mode.UPSPIKE,
-            max_range=30,
-            absolute_change_threshold=utils.create_linear_piecewise_interpolation((1, 0.035), (5, 0.05), (10, 0.06), (30, 0.08)) if parameters.PROD_MODE else lambda _: 0.001,
-            turnover_multiplier=utils.create_turnover_based_log_scaling(base=1e9, low_scale=1.2, high_scale=4),
-            cooldown=timedelta(hours=2),
+            max_range=CONFIG.getint('Spike detector', 'max range'),
+            absolute_change_threshold=parameters.SpikeDetector.THRESHOLD_FUNCTION,
+            turnover_multiplier=parameters.SpikeDetector.TURNOVER_MULTIPLIER,
+            cooldown=CONFIG.get_timedelta_from_minutes('Spike detector', 'cooldown'),
         )
         self.tasks = AsyncInfiniteTasks(
             self.run_loop_updating_status(interval=timedelta(minutes=1)),

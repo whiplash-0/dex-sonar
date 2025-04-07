@@ -1,6 +1,7 @@
 from os import environ
 
 from src.config.config import CONFIG
+from src.utils import utils
 
 
 TEST_MODE = CONFIG.getboolean('Bot', 'test mode')
@@ -12,3 +13,15 @@ SILENT_BOT_TOKEN = environ.get('SILENT_BOT_TOKEN' if PROD_MODE else 'TEST_SILENT
 USER_ID = int(environ.get('USER_ID'))
 
 PAIRS = 100 if PROD_MODE else 5
+
+class SpikeDetector:
+    THRESHOLD_FUNCTION =(
+        utils.create_linear_piecewise_interpolation((1, 0.035), (5, 0.05), (10, 0.06), (30, 0.08))
+        if PROD_MODE else
+        lambda _: 0.001
+    )
+    TURNOVER_MULTIPLIER = utils.create_turnover_based_log_scaling(
+        base=1e9,
+        low_scale=1.2,
+        high_scale=4,
+    )
