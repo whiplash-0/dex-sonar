@@ -6,7 +6,7 @@ from pybit.unified_trading import HTTP, WebSocket
 
 from src.pairs.pair import Pair, Symbol, TimeSeries
 from src.pairs.pairs import Pairs
-from src.pairs.pybit_converters import Response, convert_get_kline, convert_get_tickers, convert_stream_kline, convert_stream_ticker
+from src.pairs.pybit_converters import Convert, Response
 from src.utils import time
 
 
@@ -46,7 +46,7 @@ class LivePairs(Pairs):
     def _init(self):
         pairs = Pairs()
 
-        for ticker in convert_get_tickers(self.requests.get_tickers(category='linear')):
+        for ticker in Convert.get_tickers(self.requests.get_tickers(category='linear')):
             pairs.update(Pair(
                 symbol=ticker.symbol,
                 prices=TimeSeries(step=timedelta(minutes=1)),
@@ -65,7 +65,7 @@ class LivePairs(Pairs):
 
     def _update_kline(self, symbol: Symbol):
         pair = self[symbol]
-        kline = convert_get_kline(
+        kline = Convert.get_kline(
             self.requests.get_kline(
                 category='linear',
                 symbol=symbol,
@@ -100,7 +100,7 @@ class LivePairs(Pairs):
     def _handle_kline_update(self, response: Response):
         try:
             if response['data'][0]['confirm']:
-                kline = convert_stream_kline(response)
+                kline = Convert.stream_kline(response)
 
                 self[kline.symbol].prices.update(
                     kline.close,
@@ -122,7 +122,7 @@ class LivePairs(Pairs):
 
             if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency:
                 self.last_update[symbol] = time.get_timestamp()
-                ticker = convert_stream_ticker(response)
+                ticker = Convert.stream_ticker(response)
                 pair = self[symbol]
 
                 pair.prices.update(

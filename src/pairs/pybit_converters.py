@@ -27,16 +27,10 @@ class Ticker(BaseModel):
             if value == '': fields[name] = None
         return fields
 
-def convert_get_tickers(response: Response) -> list[Ticker]:
-    return [Ticker(**x) for x in response['result']['list']]
-
 
 class StreamTicker(Ticker):
     cross_sequence: int = Field(..., alias='cs')
     timestamp: datetime = Field(..., alias='ts')
-
-def convert_stream_ticker(response: Response) -> StreamTicker:
-    return StreamTicker(**response, **response['data'])
 
 
 class Kline(BaseModel):
@@ -47,19 +41,6 @@ class Kline(BaseModel):
     closes: list[float] = Field(...)
     volumes: list[float] = Field(...)
     turnovers: list[float] = Field(...)
-
-def convert_get_kline(response: Response, from_past_to_present: bool = False) -> Kline:
-    data = response['result']['list']
-    kline = list(zip(*(data if not from_past_to_present else reversed(data))))
-    return Kline(
-        starts=kline[0],
-        opens=kline[1],
-        highs=kline[2],
-        lows=kline[3],
-        closes=kline[4],
-        volumes=kline[5],
-        turnovers=kline[6],
-    )
 
 
 class StreamKline(BaseModel):
@@ -74,5 +55,30 @@ class StreamKline(BaseModel):
     turnover: float = Field(..., alias='turnover')
     confirm: bool = Field(..., alias='confirm')
 
-def convert_stream_kline(response: Response) -> StreamKline:
-    return StreamKline(symbol=response['topic'].rsplit('.', 1)[-1], **response['data'][0])
+
+class Convert:
+    @staticmethod
+    def get_tickers(response: Response) -> list[Ticker]:
+        return [Ticker(**x) for x in response['result']['list']]
+
+    @staticmethod
+    def stream_ticker(response: Response) -> StreamTicker:
+        return StreamTicker(**response, **response['data'])
+
+    @staticmethod
+    def get_kline(response: Response, from_past_to_present: bool = False) -> Kline:
+        data = response['result']['list']
+        kline = list(zip(*(data if not from_past_to_present else reversed(data))))
+        return Kline(
+            starts=kline[0],
+            opens=kline[1],
+            highs=kline[2],
+            lows=kline[3],
+            closes=kline[4],
+            volumes=kline[5],
+            turnovers=kline[6],
+        )
+
+    @staticmethod
+    def stream_kline(response: Response) -> StreamKline:
+        return StreamKline(symbol=response['topic'].rsplit('.', 1)[-1], **response['data'][0])
