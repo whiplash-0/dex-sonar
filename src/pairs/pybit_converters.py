@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum, auto
 from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
@@ -6,6 +7,21 @@ from pydantic import BaseModel, Field, model_validator
 
 Response = dict
 Symbol = str
+
+
+class PrelistingPhase(str, Enum):
+    """
+    Refer to: https://bybit-exchange.github.io/docs/v5/enum#curauctionphase
+    """
+    def _generate_next_value_(name, start, count, last_values):
+        return ''.join([word.title() for word in name.split('_')])
+
+    NOT_STARTED = auto()
+    CALL_AUCTION = auto()
+    CONTINUOUS_TRADING = auto()
+    CALL_AUCTION_NO_CANCEL = auto()
+    CROSS_MATCHING = auto()
+    FINISHED = auto()
 
 
 class Ticker(BaseModel):
@@ -19,6 +35,11 @@ class Ticker(BaseModel):
     best_bid_price: Optional[float] = Field(..., alias='bid1Price')
     best_ask_size: Optional[float] = Field(..., alias='ask1Size')
     best_bid_size: Optional[float] = Field(..., alias='bid1Size')
+    prelisting_phase: Optional[PrelistingPhase] = Field(..., alias='curPreListingPhase')
+
+    @property
+    def is_prelisted(self):
+        return self.prelisting_phase is not None
 
     @model_validator(mode='before')
     @classmethod
