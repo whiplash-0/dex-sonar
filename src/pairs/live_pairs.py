@@ -52,15 +52,16 @@ class LivePairs(Pairs):
         pairs = Pairs()
 
         for ticker in Convert.get_tickers(self.requests.get_tickers(category=CATEGORY)):
-            pairs.update(Pair(
-                symbol=ticker.symbol,
-                prices=TimeSeries(step=timedelta(minutes=1)),
-                turnovers=TimeSeries(step=timedelta(minutes=1)),
-                turnover=ticker.turnover,
-                open_interest=ticker.open_interest,
-                funding_rate=ticker.funding_rate,
-                next_funding_time=ticker.next_funding_time,
-            ))
+            if not ticker.is_prelisted:
+                pairs.update(Pair(
+                    symbol=ticker.symbol,
+                    prices=TimeSeries(step=timedelta(minutes=1)),
+                    turnovers=TimeSeries(step=timedelta(minutes=1)),
+                    turnover=ticker.turnover,
+                    open_interest=ticker.open_interest,
+                    funding_rate=ticker.funding_rate,
+                    next_funding_time=ticker.next_funding_time,
+                ))
 
         self.update(self.include_filter(pairs))
         self.last_update = {x: time.MIN_TIMESTAMP for x in self.pairs}
