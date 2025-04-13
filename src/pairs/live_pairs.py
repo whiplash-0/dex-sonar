@@ -43,8 +43,8 @@ class LivePairs(Pairs):
 
     async def start_continuous_updating(self, blocking=False):
         self._update_candles()
-        self.websocket.ticker_stream(self.get_symbols(), self._handle_ticker_update)
-        self.websocket.kline_stream(1, self.get_symbols(), self._handle_kline_update)
+        self.websocket.ticker_stream(self.get_symbols(), self._callback_on_ticker_update)
+        self.websocket.kline_stream(1, self.get_symbols(), self._callback_on_kline_update)
         self._enable_websocket_callbacks()
         await self.updating_tasks.run(blocking=blocking)
 
@@ -92,7 +92,7 @@ class LivePairs(Pairs):
     def _are_websocket_callbacks_enabled(self):
         return self.are_websocket_callbacks_enabled
 
-    def _handle_ticker_update(self, response: Response):
+    def _callback_on_ticker_update(self, response: Response):
         try:
             if not self._are_websocket_callbacks_enabled(): return
 
@@ -118,7 +118,7 @@ class LivePairs(Pairs):
         except Exception:
             logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}` caught exception'); raise
 
-    def _handle_kline_update(self, response: Response):
+    def _callback_on_kline_update(self, response: Response):
         """
         Updates pairs' prices and turnovers every minute when the current candlestick is closed
         """
