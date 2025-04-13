@@ -31,6 +31,7 @@ class Pair:
     turnover: Turnover
     open_interest: OpenInterest
     funding_rate: Optional[float]
+    funding_interval: int  # in hours
     next_funding_time: datetime
 
     def __eq__(self, other):

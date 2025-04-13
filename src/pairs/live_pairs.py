@@ -1,14 +1,16 @@
 import asyncio
 import inspect
 import logging
+import time as pytime
 from datetime import datetime, timedelta
 from typing import Callable, Iterable
 
 from pybit import unified_trading
 
+from src.core.async_infinite_tasks import AsyncInfiniteTasks
 from src.pairs.pair import Pair, Symbol, TimeSeries
 from src.pairs.pairs import Pairs
-from src.pairs.pybit_converters import Convert, Response
+from src.pairs.pybit_converters import Convert, InstrumentInfo, Response
 from src.utils import time
 
 
@@ -22,6 +24,7 @@ class LivePairs(Pairs):
     def __init__(
             self,
             update_frequency: timedelta = timedelta(seconds=10),
+            update_frequency_instruments_info: timedelta = timedelta(seconds=60),
             callback_on_update: Callable[[Pair], None] = lambda _: None,
             include_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda pairs: sorted(pairs, key=lambda x: x.turnover, reverse=True)[:10],
     ):
@@ -38,7 +41,10 @@ class LivePairs(Pairs):
             testnet=False,
             channel_type=CATEGORY,
         )
-        self.are_websocket_callbacks_enabled = True
+        self.updating_tasks = AsyncInfiniteTasks(
+            self._run_loop_instruments_info_update(poll_interval=update_frequency_instruments_info),
+        )
+        self.are_websocket_callbacks_enabled = False
         self.last_update: dict[Symbol, datetime] = {}
 
         self._init()
@@ -48,7 +54,7 @@ class LivePairs(Pairs):
         self.websocket.ticker_stream(self.get_symbols(), self._handle_ticker_update)
         self.websocket.kline_stream(1, self.get_symbols(), self._handle_kline_update)
         self._enable_websocket_callbacks()
-        if blocking: await asyncio.Future()
+        await self.updating_tasks.run(blocking=blocking)
 
     def stop_continuous_updating(self):
         """
@@ -60,14 +66,17 @@ class LivePairs(Pairs):
         For an immediate exit with no delay or cleanup, use `os._exit(0)`.
         """
         self._disable_websocket_callbacks()
+        self.updating_tasks.cancel_all()
 
     def is_updating_active(self):
-        return self.websocket.is_connected() and self._are_websocket_callbacks_enabled()
+        return self.websocket.is_connected() and self._are_websocket_callbacks_enabled() and not self.updating_tasks.are_cancelled()
 
     def _init(self):
         pairs = Pairs()
+        tickers = Convert.get_tickers(self.requests.get_tickers(category=CATEGORY))
+        instruments_info = self._get_instruments_info()
 
-        for ticker in Convert.get_tickers(self.requests.get_tickers(category=CATEGORY)):
+        for ticker in tickers:
             if not ticker.is_prelisted:
                 pairs.update(Pair(
                     symbol=ticker.symbol,
@@ -76,6 +85,7 @@ class LivePairs(Pairs):
                     turnover=ticker.turnover,
                     open_interest=ticker.open_interest,
                     funding_rate=ticker.funding_rate,
+                    funding_interval=instruments_info[ticker.symbol].funding_interval,
                     next_funding_time=ticker.next_funding_time,
                 ))
 
@@ -137,6 +147,26 @@ class LivePairs(Pairs):
 
         except Exception:
             logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}` caught exception'); raise
+
+    async def _run_loop_instruments_info_update(self, poll_interval: timedelta):
+        try:
+            while True:
+                start = pytime.monotonic()
+                instruments_info = self._get_instruments_info()
+
+                for symbol, pair in self.pairs.items():
+                    pair.funding_interval = instruments_info[symbol].funding_interval
+
+                await asyncio.sleep(max(poll_interval.total_seconds() - (pytime.monotonic() - start), 0))
+
+        except asyncio.CancelledError:
+            logger.debug(f'Task `{inspect.currentframe().f_code.co_name}` was cancelled'); raise
+
+    def _get_instruments_info(self) -> dict[Symbol, InstrumentInfo]:
+        return {x.symbol: x for x in Convert.get_instruments_info(self.requests.get_instruments_info(
+            category=CATEGORY,
+            limit=1000,
+        ))}
 
     def _update_candles(self):
         for symbol in self.get_symbols(): self._update_candle(symbol)
