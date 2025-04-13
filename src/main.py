@@ -6,8 +6,7 @@ from datetime import datetime, timedelta
 
 from src.config import parameters
 from src.config.config import CONFIG
-from src.core import spike_detector
-from src.core.async_infinite_tasks import AsyncInfiniteTasks
+from src.core.async_tasks import AsyncTasks
 from src.core.bot import Bot
 from src.core.message import SpikeMessage
 from src.core.spike_detector import Mode, Spike, SpikeDetector
@@ -51,7 +50,7 @@ class Application:
             mode=Mode.UPSPIKE,
             cooldown=CONFIG.get_timedelta_from_minutes('Spike detector', 'cooldown'),
         )
-        self.tasks = AsyncInfiniteTasks(
+        self.tasks = AsyncTasks(
             self.pairs.start_continuous_updating(blocking=True),
             self.run_loop_updating_status(interval=timedelta(minutes=1)),
             self.run_loop_checking_pairs_connection(interval=timedelta(seconds=10)),

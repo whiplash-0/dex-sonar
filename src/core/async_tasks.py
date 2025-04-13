@@ -6,7 +6,7 @@ from typing import Coroutine, Optional
 logger = logging.getLogger(__name__)
 
 
-class AsyncInfiniteTasks:
+class AsyncTasks:
     """
     In the case of non-blocking run, exceptions should be handled at the individual task level.
     If an exception occurs, all other related tasks should be cancelled accordingly, this won't be done automatically
