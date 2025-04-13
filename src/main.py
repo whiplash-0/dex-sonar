@@ -49,7 +49,7 @@ class Application:
             max_range=CONFIG.getint('Spike detector', 'max range'),
             threshold_function=parameters.SpikeDetector.THRESHOLD_FUNCTION,
             turnover_multiplier=parameters.SpikeDetector.TURNOVER_MULTIPLIER,
-            pair_cooldowns=spike_detector.PairCooldowns(cooldown=CONFIG.get_timedelta_from_minutes('Spike detector', 'cooldown')),
+            pairs_cooldowns=spike_detector.PairCooldowns(cooldown=CONFIG.get_timedelta_from_minutes('Spike detector', 'cooldown')),
         )
         self.tasks = AsyncInfiniteTasks(
             self.pairs.start_continuous_updating(blocking=True),

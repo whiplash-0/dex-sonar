@@ -44,17 +44,17 @@ class SpikeDetector:
             max_range: Range = 5,
             threshold_function: Callable[[Range], Change] = lambda _: 5,
             turnover_multiplier: Callable[[Turnover], float] = lambda _: 1,
-            pair_cooldowns: PairCooldowns = PairCooldowns(cooldown=timedelta()),
+            pairs_cooldowns: PairCooldowns = PairCooldowns(cooldown=timedelta()),
     ):
         self.mode = mode
         self.max_range = max_range
         self.threshold_function = threshold_function
         self.turnover_multiplier = turnover_multiplier
-        self.pair_cooldowns = pair_cooldowns
+        self.pairs_cooldowns = pairs_cooldowns
         self.last_detection: dict[Pair, datetime] = {}
 
     def detect(self, pair: Pair) -> Optional[Spike]:
-        if not self.pair_cooldowns.is_in_cooldown(pair):
+        if not self.pairs_cooldowns.is_in_cooldown(pair):
 
             # calculate changes and minimal thresholds over given time range
             prices = pair.prices
@@ -76,7 +76,7 @@ class SpikeDetector:
 
             # create and return spike
             if change_index is not None:
-                self.pair_cooldowns.set_cooldown(pair)
+                self.pairs_cooldowns.set_cooldown(pair)
                 return Spike(
                     change=changes[change_index],
                     start=prices.get_normalized_index(-(change_index + 1) - 1),  # +1 to align with candles instead of changes, -1 to align with negative indexing
