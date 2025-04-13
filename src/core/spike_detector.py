@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from typing import Callable, Optional
+from typing import Callable, Generic, Hashable, Optional, TypeVar
 
 from src.pairs.pair import Pair, Turnover
 from src.support.time_series import Index
@@ -25,16 +25,18 @@ class Mode(Enum):
     DOWNSPIKE = auto()
 
 
-class PairCooldowns:
+T = TypeVar('T', bound=Hashable)
+
+class Cooldowns(Generic[T]):
     def __init__(self, cooldown: timedelta):
         self.cooldown = cooldown
-        self.cooldown_starts: dict[Pair, datetime] = {}
+        self.cooldowns_starts: dict[T, datetime] = {}
 
-    def set_cooldown(self, pair: Pair):
-        self.cooldown_starts[pair] = time.get_timestamp()
+    def set_cooldown(self, key: T):
+        self.cooldowns_starts[key] = time.get_timestamp()
 
-    def is_in_cooldown(self, pair: Pair):
-        return time.get_time_passed_since(self.cooldown_starts.get(pair, time.MIN_TIMESTAMP)) <= self.cooldown
+    def is_in_cooldown(self, key: T) -> bool:
+        return time.get_time_passed_since(self.cooldowns_starts.get(key, time.MIN_TIMESTAMP)) <= self.cooldown
 
 
 class SpikeDetector:
@@ -44,7 +46,7 @@ class SpikeDetector:
             max_range: Range = 5,
             threshold_function: Callable[[Range], Change] = lambda _: 5,
             turnover_multiplier: Callable[[Turnover], float] = lambda _: 1,
-            pairs_cooldowns: PairCooldowns = PairCooldowns(cooldown=timedelta()),
+            pairs_cooldowns: Cooldowns[Pair] = Cooldowns(cooldown=timedelta()),
     ):
         self.mode = mode
         self.max_range = max_range
