@@ -10,6 +10,7 @@ class AsyncInfiniteTasks:
     def __init__(self, *tasks: Coroutine):
         self.tasks: list[asyncio.Task] | list[Coroutine] = tasks
         self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self._are_cancelled = False
 
     async def run(self):
         try:
@@ -19,8 +20,18 @@ class AsyncInfiniteTasks:
 
         except asyncio.CancelledError:
             logger.debug('Caught `CancelledError`. Cancelling all tasks and waiting for them to complete')
-            for x in self.tasks: x.cancel()
-            await asyncio.gather(*self.tasks, return_exceptions=True)  # supress exception raising with parameter
+            await self.cancel_all()
+
+    async def cancel_all(self):
+        self._are_cancelled = True
+
+        for x in self.tasks:
+            if not x.done(): x.cancel()
+
+        await asyncio.gather(*self.tasks, return_exceptions=True)  # supress raising exception, instead handle on task level
+
+    def are_cancelled(self):
+        return self._are_cancelled
 
     def run_coroutine_threadsafe(self, coro: Coroutine):
         asyncio.run_coroutine_threadsafe(coro, self.loop)
