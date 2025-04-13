@@ -34,7 +34,7 @@ class Application:
             token_silent=parameters.SILENT_BOT_TOKEN,
         )
         self.pairs = LivePairs(
-            update_frequency=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency'),
+            update_frequency_price=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency price'),
             update_frequency_instruments_info=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency instruments info'),
             callback_on_price_update=self.callback_on_price_update,
             pairs_filter=(

@@ -23,14 +23,14 @@ logger = logging.getLogger(__name__)
 class LivePairs(Pairs):
     def __init__(
             self,
-            update_frequency: timedelta = timedelta(seconds=10),
+            update_frequency_price: timedelta = timedelta(seconds=10),
             update_frequency_instruments_info: timedelta = timedelta(seconds=60),
             callback_on_price_update: Callable[[Pair], None] = lambda _: None,
             pairs_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda _: _,
     ):
         super().__init__()
 
-        self.update_frequency = update_frequency
+        self.update_frequency_price = update_frequency_price
         self.callback_on_price_update = callback_on_price_update
         self.pairs_filter = pairs_filter
 
@@ -107,7 +107,7 @@ class LivePairs(Pairs):
 
             symbol = response['data']['symbol']
 
-            if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency:
+            if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency_price:
                 self.last_update[symbol] = time.get_timestamp()
                 ticker = Convert.stream_ticker(response)
                 pair = self[symbol]
