@@ -26,7 +26,7 @@ class LivePairs(Pairs):
             update_frequency: timedelta = timedelta(seconds=10),
             update_frequency_instruments_info: timedelta = timedelta(seconds=60),
             callback_on_update: Callable[[Pair], None] = lambda _: None,
-            pairs_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda pairs: sorted(pairs, key=lambda x: x.turnover, reverse=True)[:10],
+            pairs_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda _: _,
     ):
         super().__init__()
 
