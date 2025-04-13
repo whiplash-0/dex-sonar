@@ -7,16 +7,20 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncInfiniteTasks:
+    """
+    In the case of non-blocking run, exceptions should be handled at the individual task level.
+    If an exception occurs, all other related tasks should be cancelled accordingly, this won't be done automatically
+    """
     def __init__(self, *tasks: Coroutine):
         self.tasks: list[asyncio.Task] | list[Coroutine] = tasks
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self._are_cancelled = False
 
-    async def run(self):
+    async def run(self, blocking=False):
         try:
             self.loop = asyncio.get_event_loop()
             self.tasks = [asyncio.create_task(x) for x in self.tasks]
-            await asyncio.gather(*self.tasks)
+            if blocking: await asyncio.gather(*self.tasks)
 
         except asyncio.CancelledError:
             logger.debug('Caught `CancelledError`. Cancelling all tasks and waiting for them to complete')

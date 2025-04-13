@@ -60,7 +60,7 @@ class Application:
     def run(self):
         logger.info('Starting bot')
         logger.info(f'Pairs (>${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)} by turnover): ' + ', '.join([x.pretty_symbol for x in self.pairs]))
-        asyncio.run(self.bot.run(self.tasks.run()))
+        asyncio.run(self.bot.run(self.tasks.run(blocking=True)))
         logger.info('Stopping bot')
 
     async def run_loop_updating_status(self, interval: timedelta):
