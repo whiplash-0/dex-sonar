@@ -46,13 +46,13 @@ class SpikeDetector:
             max_range: Range = 5,
             threshold_function: Callable[[Range], Change] = lambda _: 5,
             turnover_multiplier: Callable[[Turnover], float] = lambda _: 1,
-            pairs_cooldowns: Cooldowns[Pair] = Cooldowns(cooldown=timedelta()),
+            cooldown: timedelta = timedelta(),
     ):
         self.mode = mode
         self.max_range = max_range
         self.threshold_function = threshold_function
         self.turnover_multiplier = turnover_multiplier
-        self.pairs_cooldowns = pairs_cooldowns
+        self.pairs_cooldowns = Cooldowns(cooldown=cooldown)
 
     def detect(self, pair: Pair) -> Optional[Spike]:
         if not self.pairs_cooldowns.is_in_cooldown(pair):
