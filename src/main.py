@@ -35,6 +35,7 @@ class Application:
         )
         self.pairs = LivePairs(
             update_frequency=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency'),
+            update_frequency_instruments_info=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency instruments info'),
             callback_on_update=self.callback_on_pair_update,
             include_filter=(
                 lambda pairs: list(filter(
