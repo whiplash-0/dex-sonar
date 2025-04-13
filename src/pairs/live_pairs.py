@@ -26,13 +26,13 @@ class LivePairs(Pairs):
             update_frequency: timedelta = timedelta(seconds=10),
             update_frequency_instruments_info: timedelta = timedelta(seconds=60),
             callback_on_update: Callable[[Pair], None] = lambda _: None,
-            include_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda pairs: sorted(pairs, key=lambda x: x.turnover, reverse=True)[:10],
+            pairs_filter: Callable[[list[Pair]], Iterable[Pair]] = lambda pairs: sorted(pairs, key=lambda x: x.turnover, reverse=True)[:10],
     ):
         super().__init__()
 
         self.update_frequency = update_frequency
         self.callback_on_update = callback_on_update
-        self.include_filter = include_filter
+        self.pairs_filter = pairs_filter
 
         self.requests = unified_trading.HTTP(
             testnet=False,
@@ -89,7 +89,7 @@ class LivePairs(Pairs):
                     next_funding_time=ticker.next_funding_time,
                 ))
 
-        self.update(self.include_filter(pairs))
+        self.update(self.pairs_filter(pairs))
         self.last_update = {x: time.MIN_TIMESTAMP for x in self.pairs}
 
     def _enable_websocket_callbacks(self):

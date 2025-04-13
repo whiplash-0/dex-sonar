@@ -37,7 +37,7 @@ class Application:
             update_frequency=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency'),
             update_frequency_instruments_info=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency instruments info'),
             callback_on_update=self.callback_on_pair_update,
-            include_filter=(
+            pairs_filter=(
                 lambda pairs: list(filter(
                     lambda x: x.contract is Contract.USDT,
                     pairs.get_sorted_by_turnover(),
