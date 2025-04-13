@@ -81,7 +81,7 @@ class Application:
     async def run_loop_checking_pairs_connection(self, interval: timedelta):
         try:
             while True:
-                if not self.pairs.is_connection_alive():
+                if not self.pairs.is_updating_active():
                     logger.error(f'Pair connection was closed. Raising `CancelledError` to end program')
                     raise asyncio.CancelledError()
                 await asyncio.sleep(interval.total_seconds())
@@ -91,7 +91,7 @@ class Application:
 
     async def run_loop_spike_detection(self):
         try:
-            self.pairs.subscribe_to_stream()
+            self.pairs.start_continuous_updating()
             while True:
                 await self.callback_on_pair_update_async_part(*(await self.queue.get()))
                 logger.debug(f'Spike detection callback executed. Left: {self.queue.qsize()}')

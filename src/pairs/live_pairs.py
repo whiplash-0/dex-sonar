@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import logging
 from datetime import datetime, timedelta
@@ -37,17 +38,30 @@ class LivePairs(Pairs):
             testnet=False,
             channel_type=CATEGORY,
         )
+        self.are_websocket_callbacks_enabled = True
         self.last_update: dict[Symbol, datetime] = {}
 
         self._init()
 
-    def is_connection_alive(self):
-        return self.websocket.is_connected()
-
-    def subscribe_to_stream(self):
+    async def start_continuous_updating(self):
         self._update_candles()
         self.websocket.ticker_stream(self.get_symbols(), self._handle_ticker_update)
         self.websocket.kline_stream(1, self.get_symbols(), self._handle_kline_update)
+        self._enable_websocket_callbacks()
+
+    def stop_continuous_updating(self):
+        """
+        Cancels request tasks and disables callbacks, but does not terminate pybit's websocket thread.
+
+        This limitation is due to a known Pybit bug with the `exit()` method, which may be resolved in future versions.
+
+        Currently, the only reliable way to fully stop the Pybit thread is to terminate the entire program.
+        For an immediate exit with no delay or cleanup, use `os._exit(0)`.
+        """
+        self._disable_websocket_callbacks()
+
+    def is_updating_active(self):
+        return self.websocket.is_connected() and self._are_websocket_callbacks_enabled()
 
     def _init(self):
         pairs = Pairs()
@@ -67,8 +81,19 @@ class LivePairs(Pairs):
         self.update(self.include_filter(pairs))
         self.last_update = {x: time.MIN_TIMESTAMP for x in self.pairs}
 
+    def _enable_websocket_callbacks(self):
+        self.are_websocket_callbacks_enabled = True
+
+    def _disable_websocket_callbacks(self):
+        self.are_websocket_callbacks_enabled = False
+
+    def _are_websocket_callbacks_enabled(self):
+        return self.are_websocket_callbacks_enabled
+
     def _handle_ticker_update(self, response: Response):
         try:
+            if not self._are_websocket_callbacks_enabled(): return
+
             symbol = response['data']['symbol']
 
             if time.get_timestamp() - self.last_update[symbol] >= self.update_frequency:
@@ -92,6 +117,8 @@ class LivePairs(Pairs):
 
     def _handle_kline_update(self, response: Response):
         try:
+            if not self._are_websocket_callbacks_enabled(): return
+
             if response['data'][0]['confirm']:  # if candle is final
                 kline = Convert.stream_kline(response)
                 pair = self[kline.symbol]
