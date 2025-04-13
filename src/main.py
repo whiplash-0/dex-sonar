@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import logging
+import os
 from datetime import datetime, timedelta
 
 from src.config import parameters
@@ -119,3 +120,4 @@ class Application:
 
 if __name__ == '__main__':
     Application().run()
+    os._exit(0)  # to avoid pybit thread ending delay
