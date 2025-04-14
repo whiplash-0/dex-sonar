@@ -35,7 +35,7 @@ class Application:
         self.pairs = LivePairs(
             update_frequency_price=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency price'),
             update_frequency_instruments_info=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency instruments info'),
-            callback_on_price_update=self.callback_on_price_update,
+            callback_on_price_update=self._callback_on_price_update,
             pairs_filter=(
                 lambda pairs: list(filter(
                     lambda x: x.contract is Contract.USDT,
@@ -51,10 +51,10 @@ class Application:
             cooldown=CONFIG.get_timedelta_from_minutes('Spike detector', 'cooldown'),
         )
         self.tasks = AsyncTasks(
+            self.task_update_bot_status(poll_interval=timedelta(minutes=1)),
             self.pairs.start_continuous_updating(blocking=True),
-            self.run_loop_updating_status(interval=timedelta(minutes=1)),
-            self.run_loop_checking_pairs_connection(interval=timedelta(seconds=10)),
-            self.run_loop_spike_detection(),
+            self.task_monitor_pairs_liveness(poll_interval=timedelta(seconds=10)),
+            self.task_detect_spikes(),
         )
         self.start = time.get_timestamp()
         self.queue = asyncio.Queue()
@@ -65,14 +65,14 @@ class Application:
         asyncio.run(self.bot.run(self.tasks.run(blocking=True)))
         logger.info('Stopping bot')
 
-    async def run_loop_updating_status(self, interval: timedelta):
+    async def task_update_bot_status(self, poll_interval: timedelta):
         try:
             while True:
                 await self.bot.set_description(
                     f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start))} '
                     f'({datetime.now(CONFIG.get_timezone("Logging", "timezone")).strftime("%H:%M %d-%m")})'
                 )
-                await asyncio.sleep(interval.total_seconds())
+                await asyncio.sleep(poll_interval.total_seconds())
 
         except asyncio.CancelledError:
             logger.debug(f'Task `{inspect.currentframe().f_code.co_name}` was cancelled'); raise
@@ -80,32 +80,32 @@ class Application:
         finally:
             await self.bot.remove_description()
 
-    async def run_loop_checking_pairs_connection(self, interval: timedelta):
+    async def task_monitor_pairs_liveness(self, poll_interval: timedelta):
         try:
             while True:
                 if not self.pairs.is_updating_active():
                     logger.error(f'Pair connection was closed. Raising `CancelledError` to end program')
                     raise asyncio.CancelledError()
-                await asyncio.sleep(interval.total_seconds())
+                await asyncio.sleep(poll_interval.total_seconds())
 
         except asyncio.CancelledError:
             logger.debug(f'Task `{inspect.currentframe().f_code.co_name}` was cancelled'); raise
 
-    async def run_loop_spike_detection(self):
+    async def task_detect_spikes(self):
         try:
             while True:
-                await self.callback_on_pair_update_async_part(*(await self.queue.get()))
+                await self._callback_on_price_update_async(*(await self.queue.get()))
                 logger.debug(f'Spike detection callback executed. Left: {self.queue.qsize()}')
 
         except asyncio.CancelledError:
             logger.debug(f'Task `{inspect.currentframe().f_code.co_name}` was cancelled'); raise
 
-    def callback_on_price_update(self, pair: Pair):
+    def _callback_on_price_update(self, pair: Pair):
         if spike := self.spike_detector.detect(pair):
             logger.info(f'{pair.pretty_symbol}: {spike.change:+.1%}')
             self.tasks.run_coroutine_threadsafe(self.queue.put((pair, spike)))
 
-    async def callback_on_pair_update_async_part(self, pair: Pair, spike: Spike):
+    async def _callback_on_price_update_async(self, pair: Pair, spike: Spike):
         message = SpikeMessage(
             pair,
             spike,
