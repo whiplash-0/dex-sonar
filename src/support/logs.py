@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, tzinfo
-from logging import Formatter, LogRecord, StreamHandler, getLogger
+from logging import DEBUG, Formatter, INFO, LogRecord, StreamHandler, WARNING, getLogger
 from math import floor
 from statistics import mean
 from zoneinfo import ZoneInfo
@@ -10,8 +10,8 @@ from colorama import Fore
 
 
 VERBOSE = floor(mean([
-    logging.INFO,
-    logging.WARNING,
+    INFO,
+    WARNING,
 ]))
 
 
@@ -52,12 +52,15 @@ def setup_logging(
     handler.setFormatter(ColoredFormatter(format, datefmt=timestamp_format))
     root_logger.addHandler(handler)
 
-    getLogger('asyncio').setLevel(logging.WARNING)
-    getLogger('httpx').setLevel(logging.WARNING)
-    getLogger('httpcore').setLevel(logging.INFO)
-
-    getLogger('telegram').setLevel(logging.WARNING)
-    getLogger('matplotlib').setLevel(logging.INFO)
-    getLogger('pybit').setLevel(logging.WARNING)
-    getLogger('urllib3').setLevel(logging.WARNING)
-    getLogger('websocket').setLevel(logging.WARNING)
+    for scope, level, debug_level in [
+        ('asyncio',    WARNING, None),
+        ('httpx',      WARNING, None),
+        ('httpcore',   INFO,    None),
+        ('telegram',   WARNING, None),
+        ('matplotlib', INFO,    None),
+        ('pybit',      WARNING, None),
+        ('urllib3',    WARNING, None),
+        ('websocket',  WARNING, None),
+    ]:
+        if debug_level is None: debug_level = level
+        getLogger(scope).setLevel(level if level is DEBUG else debug_level)
