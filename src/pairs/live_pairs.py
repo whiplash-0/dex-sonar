@@ -21,6 +21,10 @@ CATEGORY = 'linear'
 logger = logging.getLogger(__name__)
 
 
+class WebsocketConnectionLostError(ConnectionError):
+    ...
+
+
 class LivePairs(Pairs):
     def __init__(
             self,
@@ -35,7 +39,10 @@ class LivePairs(Pairs):
 
         self.requests = unified_trading.HTTP(testnet=False)
         self.websocket = unified_trading.WebSocket(testnet=False, channel_type=CATEGORY)
-        self.updating_tasks = AsyncTasks(self._task_update_instruments_info(poll_interval=update_frequency_instruments_info))
+        self.permanent_tasks = AsyncTasks(
+            self._task_monitor_websocket_connection(poll_interval=timedelta(seconds=10)),
+            self._task_update_instruments_info(poll_interval=update_frequency_instruments_info),
+        )
         self.price_updates_cooldowns: Cooldowns[Symbol] = Cooldowns(cooldown=update_frequency_price)
 
         self.are_websocket_callbacks_enabled = False
@@ -46,7 +53,7 @@ class LivePairs(Pairs):
         self.websocket.ticker_stream(self.get_symbols(), self._callback_on_ticker_update)
         self.websocket.kline_stream(1, self.get_symbols(), self._callback_on_kline_update)
         self._enable_websocket_callbacks()
-        await self.updating_tasks.run(blocking=True)
+        await self.permanent_tasks.run(blocking=True)  # to be able to propagate exceptions
 
     async def stop_continuous_updating(self):
         """
@@ -58,10 +65,10 @@ class LivePairs(Pairs):
         For an immediate exit with no delay or cleanup, use `os._exit(0)`.
         """
         self._disable_websocket_callbacks()
-        await self.updating_tasks.cancel_all()
+        await self.permanent_tasks.cancel_all()
 
     def is_updating_active(self):
-        return self.websocket.is_connected() and self._are_websocket_callbacks_enabled() and not self.updating_tasks.are_cancelled()
+        return self.websocket.is_connected() and self._are_websocket_callbacks_enabled() and not self.permanent_tasks.are_cancelled()
 
     def _init(self):
         pairs = Pairs()
@@ -142,6 +149,11 @@ class LivePairs(Pairs):
 
         except Exception:
             logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}` caught exception'); raise
+
+    async def _task_monitor_websocket_connection(self, poll_interval: timedelta):
+        while True:
+            if not self.websocket.is_connected(): raise WebsocketConnectionLostError()
+            await asyncio.sleep(poll_interval.total_seconds())
 
     async def _task_update_instruments_info(self, poll_interval: timedelta):
         try:

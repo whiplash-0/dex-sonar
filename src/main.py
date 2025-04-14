@@ -10,6 +10,7 @@ from src.core.async_tasks import AsyncTasks
 from src.core.bot import Bot
 from src.core.message import SpikeMessage
 from src.core.spike_detector import Mode, Spike, SpikeDetector
+from src.pairs import live_pairs
 from src.pairs.live_pairs import LivePairs
 from src.pairs.pair import Contract, Pair
 from src.support import logs
@@ -51,9 +52,8 @@ class Application:
             cooldown=CONFIG.get_timedelta_from_minutes('Spike detector', 'cooldown'),
         )
         self.tasks = AsyncTasks(
+            self.task_update_pairs(),
             self.task_update_bot_status(poll_interval=timedelta(minutes=1)),
-            self.pairs.start_continuous_updating(blocking=True),
-            self.task_monitor_pairs_liveness(poll_interval=timedelta(seconds=10)),
             self.task_detect_spikes(),
         )
         self.start = time.get_timestamp()
@@ -64,6 +64,14 @@ class Application:
         logger.info(f'Pairs (>${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)} by turnover): ' + ', '.join([x.pretty_symbol for x in self.pairs]))
         asyncio.run(self.bot.run(self.tasks.run(blocking=True)))
         logger.info('Stopping bot')
+
+    async def task_update_pairs(self):
+        try:
+            await self.pairs.start_continuous_updating()
+
+        except live_pairs.WebsocketConnectionLostError:
+            logger.error('Websocket connection lost. Stopping bot')
+            raise asyncio.CancelledError()
 
     async def task_update_bot_status(self, poll_interval: timedelta):
         try:
@@ -79,17 +87,6 @@ class Application:
 
         finally:
             await self.bot.remove_description()
-
-    async def task_monitor_pairs_liveness(self, poll_interval: timedelta):
-        try:
-            while True:
-                if not self.pairs.is_updating_active():
-                    logger.error(f'Pair connection was closed. Raising `CancelledError` to end program')
-                    raise asyncio.CancelledError()
-                await asyncio.sleep(poll_interval.total_seconds())
-
-        except asyncio.CancelledError:
-            logger.debug(f'Task `{inspect.currentframe().f_code.co_name}` was cancelled'); raise
 
     async def task_detect_spikes(self):
         try:
