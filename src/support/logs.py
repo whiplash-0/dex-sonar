@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, tzinfo
-from logging import DEBUG, Formatter, INFO, LogRecord, StreamHandler, WARNING, getLogger
+from logging import CRITICAL, DEBUG, Formatter, INFO, LogRecord, StreamHandler, WARNING, getLogger
 from math import floor
 from statistics import mean
 from zoneinfo import ZoneInfo
@@ -53,14 +53,14 @@ def setup_logging(
     root_logger.addHandler(handler)
 
     for scope, level, debug_level in [
-        ('asyncio',    WARNING, None),
-        ('httpx',      WARNING, None),
-        ('httpcore',   INFO,    None),
-        ('telegram',   WARNING, None),
-        ('matplotlib', INFO,    None),
-        ('pybit',      WARNING, None),
-        ('urllib3',    WARNING, None),
-        ('websocket',  WARNING, None),
+        ('telegram',   WARNING,  None    ),
+        ('pybit',      WARNING,  None    ),
+        ('websocket',  CRITICAL, WARNING ),
+        ('asyncio',    WARNING,  None    ),
+        ('httpx',      WARNING,  None    ),
+        ('httpcore',   INFO,     None    ),
+        ('matplotlib', INFO,     None    ),
+        ('urllib3',    WARNING,  None    ),
     ]:
         if debug_level is None: debug_level = level
         getLogger(scope).setLevel(level if level is DEBUG else debug_level)
