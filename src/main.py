@@ -56,7 +56,7 @@ class Application:
 
     def run(self):
         logger.info('Bot started')
-        logger.info(f'Pairs (>${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)} by turnover): ' + ', '.join([x.pretty_symbol for x in self.pairs]))
+        logger.info(f'Pairs ({len(self.pairs)}, turnover > ${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)}): ' + ', '.join([x.pretty_symbol for x in self.pairs]))
         asyncio.run(self.bot.run(self.tasks.run(blocking=True)))
         logger.info('Bot stopped')
 
