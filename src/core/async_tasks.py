@@ -1,9 +1,14 @@
 import asyncio
 import logging
-from typing import Coroutine, Optional
+import time as pytime
+from datetime import timedelta
+from typing import Callable, Coroutine, Optional
 
 
 logger = logging.getLogger(__name__)
+
+
+RawCoroutine = Callable[[], Coroutine]
 
 
 class AsyncTasks:
@@ -39,3 +44,15 @@ class AsyncTasks:
 
     def run_coroutine_threadsafe(self, coro: Coroutine):
         asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+
+class AsyncPollingTasks(AsyncTasks):
+    def __init__(self, *raw_coroutines_and_poll_intervals: tuple[RawCoroutine, timedelta]):
+        super().__init__(*[self._wrap_coroutine_with_polling(x, y) for x, y in raw_coroutines_and_poll_intervals])
+
+    @staticmethod
+    async def _wrap_coroutine_with_polling(raw_coroutine, poll_interval):
+        while True:
+            start = pytime.monotonic()
+            await raw_coroutine()
+            await asyncio.sleep(max(poll_interval.total_seconds() - (pytime.monotonic() - start), 0))
