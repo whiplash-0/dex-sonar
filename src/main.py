@@ -68,6 +68,9 @@ class Application:
             logger.error('Websocket connection lost. Stopping bot')
             raise asyncio.CancelledError()
 
+        finally:
+            await self.pairs.stop_continuous_updating()
+
     async def task_update_bot_status(self, poll_interval: timedelta):
         try:
             while True:
