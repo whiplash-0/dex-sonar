@@ -48,7 +48,7 @@ class Application:
         )
         self.permanent_tasks = AsyncTasks(
             self.task_update_pairs(),
-            self.task_update_bot_status(poll_interval=timedelta(minutes=1)),
+            self.task_update_bot_status(polling_interval=timedelta(minutes=1)),
             self.task_detect_spikes(),
         )
         self.start = time.get_timestamp()
@@ -71,14 +71,14 @@ class Application:
         finally:
             await self.pairs.stop_live_updates()
 
-    async def task_update_bot_status(self, poll_interval: timedelta):
+    async def task_update_bot_status(self, polling_interval: timedelta):
         try:
             while True:
                 await self.bot.set_description(
                     f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start))} '
                     f'({datetime.now(CONFIG.get_timezone("Logging", "timezone")).strftime("%H:%M %d-%m")})'
                 )
-                await asyncio.sleep(poll_interval.total_seconds())
+                await asyncio.sleep(polling_interval.total_seconds())
 
         finally:
             await self.bot.remove_description()
