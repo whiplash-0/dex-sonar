@@ -29,10 +29,10 @@ class Cooldowns(Generic[T]):
     def get_cooldown(self):
         return self.cooldown
 
-    def set_cooldown(self, key: T):
+    def set_for(self, key: T):
         self.cooldown_starts[key] = get_timestamp()
 
-    def set_cooldown_start(self, key: T, timestamp: datetime):
+    def set_start_for(self, key: T, timestamp: datetime):
         self.cooldown_starts[key] = timestamp
 
     def is_in_cooldown(self, key: T) -> bool:

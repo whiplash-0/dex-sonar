@@ -69,7 +69,7 @@ class SpikeDetector:
                 for i, (x, y) in enumerate(zip(absolute_changes, thresholds))
                 if x >= y
             ]:
-                self.pairs_cooldowns.set_cooldown(pair)
+                self.pairs_cooldowns.set_for(pair)
 
                 match self.prefer:
                     case Prefer.MAX_CHANGE:    spike_index = max(indices, key=lambda i: absolute_changes[i])
