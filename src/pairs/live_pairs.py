@@ -49,14 +49,14 @@ class LivePairs(Pairs):
         self.are_websocket_callbacks_enabled = False
         self._init()
 
-    async def start_continuous_updating(self):
+    async def start_live_updates(self):
         self._update_candles()
         self.websocket.ticker_stream(self.get_symbols(), self._callback_on_ticker_update)
         self.websocket.kline_stream(1, self.get_symbols(), self._callback_on_kline_update)
         self._enable_websocket_callbacks()
         await self.permanent_tasks.run(blocking=True)  # to be able to propagate exceptions
 
-    async def stop_continuous_updating(self):
+    async def stop_live_updates(self):
         """
         Cancels request tasks and disables callbacks, but does not terminate pybit's websocket thread.
 
@@ -68,7 +68,7 @@ class LivePairs(Pairs):
         self._disable_websocket_callbacks()
         await self.permanent_tasks.cancel_all()
 
-    def is_updating_active(self):
+    def are_live_updates_active(self):
         return self.websocket.is_connected() and self._are_websocket_callbacks_enabled() and not self.permanent_tasks.are_cancelled()
 
     def _init(self):

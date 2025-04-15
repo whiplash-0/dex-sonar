@@ -62,14 +62,14 @@ class Application:
 
     async def task_update_pairs(self):
         try:
-            await self.pairs.start_continuous_updating()
+            await self.pairs.start_live_updates()
 
         except live_pairs.WebsocketConnectionLostError:
             logger.error('Websocket connection lost. Stopping bot')
             raise asyncio.CancelledError()
 
         finally:
-            await self.pairs.stop_continuous_updating()
+            await self.pairs.stop_live_updates()
 
     async def task_update_bot_status(self, poll_interval: timedelta):
         try:
