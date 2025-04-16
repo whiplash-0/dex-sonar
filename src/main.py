@@ -49,10 +49,10 @@ class Application:
         self.permanent_tasks = AsyncTasks(
             self.task_update_pairs(),
             self.task_update_bot_status(polling_interval=timedelta(minutes=1)),
-            self.task_detect_spikes(),
+            self.task_call_async_callbacks_from_live_pairs(),
         )
-        self.start = time.get_timestamp()
-        self.queue = asyncio.Queue()
+        self.start_time = time.get_timestamp()
+        self.callback_queue = asyncio.Queue()
 
     def run(self):
         logger.info('Bot started')
@@ -75,7 +75,7 @@ class Application:
         try:
             while True:
                 await self.bot.set_description(
-                    f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start))} '
+                    f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start_time))} '
                     f'({datetime.now(CONFIG.get_timezone("Logging", "timezone")).strftime("%H:%M %d-%m")})'
                 )
                 await asyncio.sleep(polling_interval.total_seconds())
@@ -83,15 +83,17 @@ class Application:
         finally:
             await self.bot.remove_description()
 
-    async def task_detect_spikes(self):
-        while True:
-            await self._callback_on_price_update_async(*(await self.queue.get()))
-            logger.debug(f'Spike detection callback executed. Left: {self.queue.qsize()}')
-
     def _callback_on_price_update(self, pair: Pair):
         if spike := self.spike_detector.detect(pair):
             logger.info(f'{pair.pretty_symbol}: {spike.change:+.1%}')
-            self.permanent_tasks.run_coroutine_threadsafe(self.queue.put((pair, spike)))
+            self.permanent_tasks.run_coroutine_threadsafe(self.callback_queue.put((pair, spike, time.get_monotonic())))
+
+    async def task_call_async_callbacks_from_live_pairs(self):
+        while True:
+            pair, spike, start_time = await self.callback_queue.get()
+            logger.debug(f'{pair.pretty_symbol}: Switched to async callback in: {time.get_monotonic() - start_time:.1f}s')
+            await self._callback_on_price_update_async(pair, spike)
+            logger.debug(f'{pair.pretty_symbol}: Callback executed in: {time.get_monotonic() - start_time:.1f}s. Left: {self.callback_queue.qsize()}')
 
     async def _callback_on_price_update_async(self, pair: Pair, spike: Spike):
         message = SpikeMessage(
