@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Generic, Hashable, TypeVar
@@ -6,8 +7,15 @@ from typing import Generic, Hashable, TypeVar
 MIN_TIMESTAMP = datetime.min.replace(tzinfo=timezone.utc)
 
 
+Second = float
+
+
 def get_timestamp() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def get_monotonic() -> Second:
+    return time.monotonic()
 
 
 def get_time_passed_since(ts: datetime) -> timedelta:
