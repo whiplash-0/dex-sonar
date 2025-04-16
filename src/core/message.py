@@ -39,7 +39,7 @@ class SpikeMessage(Message):
             else: lines.append(f'{strings[0]}{" " * (self.LINE_WIDTH - len(strings[0]) - len(strings[1]))}{strings[1]}')
 
         duration = time.format_timedelta(pair.prices.get_timestamp(spike.end) - pair.prices.get_timestamp(spike.start), shorten=True)
-        add_line(pair.pretty_symbol, f'{spike.change:+.1%}/{duration}')
+        add_line(pair.base_symbol, f'{spike.change:+.1%}/{duration}')
         add_line('Price:', '$' + format_number_by_significant_digits(pair.price, significant_digits=3))
         add_line('Turnover:', '$' + format_large_number(pair.turnover, decimal_places=1, decrease_decimal_places=True))
         add_line('Funding rate:', format_number_by_significant_digits(pair.funding_rate * 100, significant_digits=1, decimal_places=3) + '%')

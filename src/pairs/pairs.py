@@ -17,7 +17,7 @@ class Pairs:
         return self.pairs[symbol]
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({", ".join([x.pretty_symbol for x in self])})'
+        return f'{self.__class__.__name__}({", ".join([x.base_symbol for x in self])})'
 
     def update(self, pairs: Pair | Iterable[Pair]):
         if isinstance(pairs, Pair): pairs = [pairs]
