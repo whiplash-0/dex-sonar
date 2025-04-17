@@ -58,6 +58,10 @@ class Pair:
     def price(self):
         return self.prices[-1]
 
+    @property
+    def funding_rate_per_day(self):
+        return self.funding_rate / self.funding_interval * 24
+
     def create_chart(
             self,
             size=1,
