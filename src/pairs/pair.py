@@ -34,7 +34,7 @@ class Pair:
     funding_interval: int  # in hours
     next_funding_time: datetime
 
-    MAX_BASE_COIN_LEN = 14
+    BASE_SYMBOL_MAX_LEN = 14
 
     def __eq__(self, other):
         return other.symbol == self.symbol if isinstance(other, Pair) else False
