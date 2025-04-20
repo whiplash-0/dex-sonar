@@ -110,5 +110,9 @@ class Application:
 
 
 if __name__ == '__main__':
-    Application().run()
-    os._exit(0)  # to avoid pybit thread ending delay
+    try:
+        Application().run()
+        os._exit(0)  # to avoid pybit thread ending delay
+    except Exception as e:
+        logger.exception(e)
+        os._exit(1)
