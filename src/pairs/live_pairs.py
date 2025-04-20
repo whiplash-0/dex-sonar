@@ -52,7 +52,7 @@ class LivePairs(Pairs):
     async def load_pairs(self):
         pairs = Pairs()
         tickers = Convert.get_tickers(self.requests.get_tickers(category=CATEGORY))
-        instruments_info = self._get_instruments_info()
+        instruments_info = await self._get_instruments_info()
 
         for ticker in tickers:
             if not ticker.is_prelisted:
@@ -164,14 +164,25 @@ class LivePairs(Pairs):
         self._enable_websocket_callbacks()
 
     async def _polling_task_update_instruments_info(self):
-        instruments_info = self._get_instruments_info()
+        instruments_info = await self._get_instruments_info()
         for symbol, pair in self.pairs.items(): pair.funding_interval = instruments_info[symbol].funding_interval
 
-    def _get_instruments_info(self) -> dict[Symbol, InstrumentInfo]:
-        return {x.symbol: x for x in Convert.get_instruments_info(self.requests.get_instruments_info(
-            category=CATEGORY,
-            limit=1000,
-        ))}
+    async def _get_instruments_info(self, trials_on_error=3, error_cooldown=timedelta(seconds=1)) -> dict[Symbol, InstrumentInfo]:
+        instruments_info = None
+
+        for i in range(1 + trials_on_error):
+            try:
+                instruments_info = self.requests.get_instruments_info(
+                    category=CATEGORY,
+                    limit=1000,
+                )
+                break
+            except Exception as e:
+                logger.error(f'{inspect.currentframe().f_code.co_name}(): {repr(e)}')
+                if i == trials_on_error: raise
+                await asyncio.sleep(error_cooldown.total_seconds())
+
+        return {x.symbol: x for x in Convert.get_instruments_info(instruments_info)}
 
     def _update_candles(self):
         for symbol in self.get_symbols(): self._update_candle(symbol)
