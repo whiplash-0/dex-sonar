@@ -1,18 +1,23 @@
+import logging
 from io import BytesIO
 from typing import Coroutine, Iterable
 
-from telegram import Bot as TelegramBot, InlineKeyboardMarkup, LinkPreviewOptions
+from telegram import Bot as TelegramBot, InlineKeyboardMarkup, LinkPreviewOptions, Update
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, BaseHandler, Defaults
+from telegram.ext import ApplicationBuilder, ApplicationHandlerStop, BaseHandler, ContextTypes, Defaults, TypeHandler
 
 
+logger = logging.getLogger(__name__)
+
+
+Token = str
 UserID = int
 Text = str
 ImageBuffer = BytesIO
 
 
 class Bot:
-    def __init__(self, token, token_silent):
+    def __init__(self, token: Token, token_silent: Token, user_whitelist: Iterable[UserID]):
         defaults = Defaults(
             parse_mode=ParseMode.MARKDOWN_V2,
             link_preview_options=LinkPreviewOptions(is_disabled=True),
@@ -21,10 +26,16 @@ class Bot:
         self.application_silent = ApplicationBuilder().token(token_silent).defaults(defaults).build()
         self.bot: TelegramBot = self.application.bot
         self.bot_silent: TelegramBot = self.application_silent.bot
+        self.whitelist = user_whitelist
+        self._init()
 
-    def add_handlers(self, handlers: Iterable[BaseHandler]):
-        self.application.add_handlers(handlers)
-        self.application_silent.add_handlers(handlers)
+    def _init(self):
+        self.add_handlers(TypeHandler(Update, self._authorize_access), group=0)
+
+    def add_handlers(self, handlers: BaseHandler | Iterable[BaseHandler], group=None):
+        if isinstance(handlers, BaseHandler): handlers = [handlers]
+        for x in [self.application, self.application_silent]:
+            x.add_handlers(handlers, **({'group': group} if group is not None else {}))
 
     async def run(self, coro: Coroutine):
         await self.application.initialize()
@@ -44,14 +55,6 @@ class Bot:
         await self.application.updater.stop()
         await self.application.stop()
         await self.application.shutdown()
-
-    async def set_description(self, description):
-        await self.bot.set_my_short_description(description)
-        await self.bot_silent.set_my_short_description(description)
-
-    async def remove_description(self):
-        await self.bot.set_my_short_description(None)
-        await self.bot_silent.set_my_short_description(None)
 
     async def send_message(
             self,
@@ -76,3 +79,18 @@ class Bot:
                 caption=text,
                 reply_markup=reply_markup,
             )
+
+    async def set_description(self, description):
+        await self.bot.set_my_short_description(description)
+        await self.bot_silent.set_my_short_description(description)
+
+    async def remove_description(self):
+        await self.bot.set_my_short_description(None)
+        await self.bot_silent.set_my_short_description(None)
+
+    async def _authorize_access(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+
+        if user.id not in self.whitelist:
+            logger.warning(f'Unauthorized access from: {user.full_name} @{user.username if user.username else ""} #{user.id}')
+            raise ApplicationHandlerStop

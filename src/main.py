@@ -31,6 +31,7 @@ class Application:
         self.bot = Bot(
             token=parameters.BOT_TOKEN,
             token_silent=parameters.SILENT_BOT_TOKEN,
+            user_whitelist=[parameters.USER_ID],
         )
         self.pairs = LivePairs(
             update_frequency_price=CONFIG.get_timedelta_from_seconds('Pairs', 'update frequency price'),
