@@ -2,9 +2,9 @@ import logging
 from io import BytesIO
 from typing import Coroutine, Iterable
 
-from telegram import Bot as TelegramBot, InlineKeyboardMarkup, LinkPreviewOptions, Update
+from telegram import Bot as TelegramBot, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, ApplicationHandlerStop, BaseHandler, ContextTypes, Defaults, TypeHandler
+from telegram.ext import ApplicationBuilder, ApplicationHandlerStop, BaseHandler, CommandHandler, ContextTypes, Defaults, TypeHandler
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ class Bot:
 
     def _init(self):
         self._add_handlers(TypeHandler(Update, self._authorize_access), group=0)  # whitelist
+        self._add_handlers(CommandHandler('start', self._start), group=1)
 
     async def run(self, coro: Coroutine):
         await self.application.initialize()
@@ -101,3 +102,8 @@ class Bot:
 
             logger.warning(f'Unauthorized access from: {user.full_name} @{user.username if user.username else ""} #{user.id}. {update_repr}')
             raise ApplicationHandlerStop
+
+    @staticmethod
+    async def _start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        markup = ReplyKeyboardMarkup([[InlineKeyboardButton('Menu', callback_data='menu')]], resize_keyboard=True)
+        await update.message.reply_text(text='Menu has been pinned to your input area', reply_markup=markup)
