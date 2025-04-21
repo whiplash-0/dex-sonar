@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from src.config import parameters
 from src.config.config import CONFIG
-from src.core.async_tasks import AsyncTasks
+from src.core.async_tasks import AsyncConcurrentTasks
 from src.core.custom_bot import CustomBot
 from src.core.message import SpikeMessage
 from src.core.spike_detector import Catch, Prefer, Spike, SpikeDetector
@@ -47,7 +47,7 @@ class Application:
             prefer=Prefer.MAX_CHANGE,
             cooldown=CONFIG.get_timedelta_from_minutes('Upspike detector', 'cooldown'),
         )
-        self.permanent_tasks = AsyncTasks(
+        self.permanent_tasks = AsyncConcurrentTasks(
             self.task_update_pairs(),
             self.task_update_bot_status(polling_interval=timedelta(minutes=1)),
             self.task_call_async_callbacks_from_live_pairs(),

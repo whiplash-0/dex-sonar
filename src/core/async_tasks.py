@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 RawCoroutine = Callable[[], Coroutine]
 
 
-class AsyncTasks:
+class AsyncConcurrentTasks:
     """
     In the case of non-blocking run, exceptions should be handled at the individual task level.
     If an exception occurs, all other related tasks should be cancelled accordingly, this won't be done automatically
@@ -50,7 +50,7 @@ class AsyncTasks:
         asyncio.run_coroutine_threadsafe(coro, self.loop)
 
 
-class AsyncPollingTasks(AsyncTasks):
+class AsyncConcurrentPollingTasks(AsyncConcurrentTasks):
     def __init__(self, *raw_coroutines_and_poll_intervals: tuple[RawCoroutine, timedelta]):
         super().__init__(*[self._wrap_coroutine_with_polling(x, y) for x, y in raw_coroutines_and_poll_intervals])
 
