@@ -10,15 +10,23 @@ from src.core.bot import Bot, UserID
 logger = logging.getLogger(__name__)
 
 
+COMMANDS = [
+    ('start', 'Start the bot and get menu'),
+]
+
+
 class CustomBot(Bot):
     def __init__(self, whitelist: Iterable[UserID], **kwargs):
         super().__init__(**kwargs)
         self.whitelist = whitelist
-        self._attach_handlers()
+        self._init()
 
-    def _attach_handlers(self):
+    def _init(self):
         self.add_handlers(TypeHandler(Update, self._authorize_access), group=0)  # whitelist
         self.add_handlers(CommandHandler('start', self._start), group=1)
+
+    async def init(self):
+        await self.set_my_commands(COMMANDS)
 
     async def _authorize_access(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
