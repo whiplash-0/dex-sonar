@@ -17,7 +17,7 @@ ImageBuffer = BytesIO
 
 
 class Bot:
-    def __init__(self, token: Token, token_silent: Token, user_whitelist: Iterable[UserID]):
+    def __init__(self, token: Token, token_silent: Token, whitelist: Iterable[UserID]):
         defaults = Defaults(
             parse_mode=ParseMode.MARKDOWN_V2,
             link_preview_options=LinkPreviewOptions(is_disabled=True),
@@ -26,7 +26,7 @@ class Bot:
         self.application_silent = ApplicationBuilder().token(token_silent).defaults(defaults).build()
         self.bot: TelegramBot = self.application.bot
         self.bot_silent: TelegramBot = self.application_silent.bot
-        self.whitelist = user_whitelist
+        self.whitelist = whitelist
         self._init()
 
     def _init(self):
