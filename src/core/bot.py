@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Coroutine, Iterable, Sequence
+from typing import Coroutine, Sequence
 
 from telegram import Bot as TelegramBot, InlineKeyboardMarkup, LinkPreviewOptions
 from telegram.constants import ParseMode
@@ -29,8 +29,7 @@ class Bot:
         await self.bot.set_my_commands(commands)
         await self.bot_silent.set_my_commands(commands)
 
-    def add_handlers(self, handlers: BaseHandler | Iterable[BaseHandler], group=None):
-        if isinstance(handlers, BaseHandler): handlers = [handlers]
+    def add_handlers(self, *handlers: BaseHandler, group=None):
         for x in [self.application, self.application_silent]:
             x.add_handlers(handlers, **({'group': group} if group is not None else {}))
 
