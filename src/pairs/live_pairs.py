@@ -6,7 +6,7 @@ from typing import Callable, Iterable
 
 from pybit import unified_trading
 
-from src.core.async_tasks import AsyncPollingTasks
+from src.core.async_tasks import AsyncConcurrentPollingTasks
 from src.pairs.pair import Pair, Symbol, TimeSeries
 from src.pairs.pairs import Pairs
 from src.pairs.pybit_converters import Convert, InstrumentInfo, Response
@@ -41,7 +41,7 @@ class LivePairs(Pairs):
 
         self.requests = unified_trading.HTTP(testnet=False)
         self.websocket = unified_trading.WebSocket(testnet=False, channel_type=CATEGORY)
-        self.permanent_tasks = AsyncPollingTasks(
+        self.permanent_tasks = AsyncConcurrentPollingTasks(
             (self._polling_task_monitor_websocket_liveness, polling_interval_monitor_websocket_liveness),
             (self._polling_task_distribute_update_cooldowns_uniformly, polling_interval_distribute_update_cooldowns_uniformly),
             (self._polling_task_update_instruments_info, polling_interval_update_instruments_info),
