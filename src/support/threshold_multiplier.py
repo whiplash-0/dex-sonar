@@ -1,11 +1,10 @@
 import asyncio
-import subprocess
 
 from sqlalchemy import Column, Float, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
-from src.config.config import CONFIG
+from src.config import parameters
 
 
 DEFAULT_VALUE = 1.0
@@ -13,21 +12,8 @@ PRECISION = 10
 TYPE = float
 
 
-def get_database_url():
-    result = subprocess.run(
-        ['heroku', 'config:get', 'DATABASE_URL', '-a', CONFIG.get('Heroku', 'app name')],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    if result.returncode == 0:
-        return result.stdout.strip().replace('postgres://', 'postgresql+asyncpg://', 1)
-    else:
-        raise ValueError(f'Error fetching `DATABASE_URL`: {result.stderr.strip()}')
-
 engine = create_async_engine(
-    get_database_url(),
+    parameters.DATABASE_URL,
     future=True,
 )
 session = async_sessionmaker(
