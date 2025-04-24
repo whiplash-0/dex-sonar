@@ -37,7 +37,7 @@ class ThresholdMultiplierButton(str, Enum):
 def create_threshold_multiplier_markup():
     return InlineKeyboardMarkup([[
         InlineKeyboardButton('➖', callback_data=ThresholdMultiplierButton.DECREASE),
-        InlineKeyboardButton(f'{ThresholdMultiplier.get():.2f}', callback_data=ThresholdMultiplierButton.VALUE),
+        InlineKeyboardButton(f'{ThresholdMultiplier.get():.0%}', callback_data=ThresholdMultiplierButton.VALUE),
         InlineKeyboardButton('➕', callback_data=ThresholdMultiplierButton.INCREASE)
     ]])
 
