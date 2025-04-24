@@ -17,6 +17,8 @@ class ThresholdMultiplier:
     NAME = 'Threshold multiplier'
     TEXT = 'Adjust the threshold multiplier using buttons below:'
     STEP = 0.05
+    MIN = 0.5
+    MAX = 3
 
 
 logger = logging.getLogger(__name__)
@@ -50,8 +52,14 @@ async def adjust_threshold_multiplier(update: Update, context: ContextTypes.DEFA
     await query.answer()
 
     match query.data:
-        case ThresholdMultiplierButton.DECREASE: await ThresholdMultiplierValue.set(ThresholdMultiplierValue.get() - ThresholdMultiplier.STEP)
-        case ThresholdMultiplierButton.INCREASE: await ThresholdMultiplierValue.set(ThresholdMultiplierValue.get() + ThresholdMultiplier.STEP)
+
+        case ThresholdMultiplierButton.DECREASE:
+            if (value := ThresholdMultiplierValue.get() - ThresholdMultiplier.STEP) >= ThresholdMultiplier.MIN:
+                await ThresholdMultiplierValue.set(value)
+
+        case ThresholdMultiplierButton.INCREASE:
+            if (value := ThresholdMultiplierValue.get() + ThresholdMultiplier.STEP) <= ThresholdMultiplier.MAX:
+                await ThresholdMultiplierValue.set(value)
 
     try:
         await query.edit_message_text(text=ThresholdMultiplier.TEXT, reply_markup=create_threshold_multiplier_markup())
