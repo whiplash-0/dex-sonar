@@ -24,9 +24,11 @@ class ThresholdMultiplier:
 logger = logging.getLogger(__name__)
 
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup([[InlineKeyboardButton(ThresholdMultiplier.NAME)]], resize_keyboard=True)
     await update.message.reply_text(text=START_TEXT, reply_markup=markup)
+
 
 
 class ThresholdMultiplierButton(str, Enum):
@@ -37,6 +39,7 @@ class ThresholdMultiplierButton(str, Enum):
     VALUE = auto()
     INCREASE = auto()
 
+
 def create_threshold_multiplier_markup():
     return InlineKeyboardMarkup([[
         InlineKeyboardButton('➖', callback_data=ThresholdMultiplierButton.DECREASE),
@@ -44,8 +47,10 @@ def create_threshold_multiplier_markup():
         InlineKeyboardButton('➕', callback_data=ThresholdMultiplierButton.INCREASE)
     ]])
 
+
 async def send_threshold_multiplier(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=ThresholdMultiplier.TEXT, reply_markup=create_threshold_multiplier_markup())
+
 
 async def adjust_threshold_multiplier(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -65,6 +70,7 @@ async def adjust_threshold_multiplier(update: Update, context: ContextTypes.DEFA
         await query.edit_message_text(text=ThresholdMultiplier.TEXT, reply_markup=create_threshold_multiplier_markup())
     except error.BadRequest as e:  # ignore exception about same content after editing
         if 'specified new message content and reply markup are exactly the same' not in str(e): raise
+
 
 
 class CustomBot(Bot):
