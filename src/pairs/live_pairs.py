@@ -3,7 +3,7 @@ import inspect
 import logging
 from datetime import timedelta
 from typing import Callable, Iterable
-
+from requests import exceptions as requests_exceptions
 from pybit import unified_trading
 
 from src.core.async_tasks import AsyncConcurrentPollingTasks
@@ -178,8 +178,11 @@ class LivePairs(Pairs):
                     limit=1000,
                 )
                 break
-            except Exception as e:
-                logger.error(f'{inspect.currentframe().f_code.co_name}(): {repr(e)}')
+            except requests_exceptions.ConnectionError as e:
+                logger.warning(
+                    f'{inspect.currentframe().f_code.co_name}(): Got {e}' +
+                    (f'. Retrying in {error_cooldown.total_seconds()}s' if i < trials_on_error else '')
+                )
                 if i == trials_on_error: raise
                 await asyncio.sleep(error_cooldown.total_seconds())
 
