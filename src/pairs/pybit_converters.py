@@ -83,11 +83,16 @@ class StreamKline(BaseModel):
 class InstrumentInfo(BaseModel):
     symbol: Symbol = Field(...)
     funding_interval: int = Field(..., alias='fundingInterval')  # in hours
+    delisting_time: Optional[datetime] = Field(..., alias='deliveryTime')
 
     @field_validator('funding_interval', mode='before')
     def _normalize_funding_interval(cls, v: int) -> int:
         if v % HOUR_IN_MINUTES != 0: raise ValueError('`funding_interval` must be divisible by 60 (minutes)')
         return int(v / HOUR_IN_MINUTES)
+
+    @field_validator('delisting_time', mode='before')
+    def _discard_zero(cls, v: str) -> Optional[str]:
+        return None if v == '0' else v
 
 
 class Convert:
