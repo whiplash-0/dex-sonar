@@ -96,7 +96,11 @@ class Application:
             await self.bot.remove_description()
 
     def _callback_on_price_update(self, pair: Pair):
-        if (upspike := self.upspike_detector.detect(pair)) and abs(pair.funding_rate_per_day) <= CONFIG.get_percent('Upspike detector', 'max funding rate'):
+        if (
+                not pair.is_being_delisted and
+                abs(pair.funding_rate_per_day) <= CONFIG.get_percent('Upspike detector', 'max funding rate') and
+                (upspike := self.upspike_detector.detect(pair))
+        ):
             logger.info(f'{pair.base_symbol + ":":>{pair.BASE_SYMBOL_MAX_LEN + 1}} {upspike.change:+.1%}')
             self.tasks.schedule_task_in_async_thread(self.callback_queue.put((pair, upspike, time.get_monotonic())))
 
