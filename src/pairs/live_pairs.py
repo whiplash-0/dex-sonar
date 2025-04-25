@@ -65,6 +65,7 @@ class LivePairs(Pairs):
                     funding_rate=ticker.funding_rate,
                     funding_interval=instruments_info[ticker.symbol].funding_interval,
                     next_funding_time=ticker.next_funding_time,
+                    delisting_time=instruments_info[ticker.symbol].delisting_time,
                 ))
 
         self.update(self.pairs_filter(pairs))

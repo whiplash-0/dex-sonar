@@ -33,6 +33,7 @@ class Pair:
     funding_rate: Optional[float]
     funding_interval: int  # in hours
     next_funding_time: datetime
+    delisting_time: Optional[datetime]
 
     BASE_SYMBOL_MAX_LEN = 14
 
@@ -61,6 +62,10 @@ class Pair:
     @property
     def funding_rate_per_day(self):
         return self.funding_rate / self.funding_interval * 24
+
+    @property
+    def is_being_delisted(self):
+        return self.delisting_time is not None
 
     def create_chart(
             self,
