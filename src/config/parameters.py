@@ -1,9 +1,9 @@
 import subprocess
+from math import log10
 from os import environ
 
 from src.config.config import CONFIG
 from src.pairs.pair import Contract
-from src.utils import utils
 
 
 TEST_MODE = CONFIG.getboolean('Bot', 'test mode')
@@ -40,13 +40,45 @@ PAIRS_FILTER = (
 )
 
 class SpikeDetector:
-    THRESHOLD_FUNCTION =(
-        utils.create_linear_piecewise_interpolation((1, 0.035), (5, 0.05), (10, 0.06), (30, 0.08))
+    @staticmethod
+    def _create_threshold_linear_piecewise_interpolation(*points: tuple[int, float]):
+        """
+        :param points: tuples of (minute, percentage)
+        """
+        xs, ys = [p[0] for p in points], [p[1] / 100 for p in points]
+
+        def linear_piecewise_function(x):
+            for i in range(len(xs) - 1):
+                if xs[i] <= x <= xs[i + 1]:
+                    x1, y1 = xs[i], ys[i]
+                    x2, y2 = xs[i + 1], ys[i + 1]
+                    return y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+
+            raise ValueError(f'{x} is outside of interpolation range')
+
+        return linear_piecewise_function
+
+    THRESHOLD_FUNCTION = (
+        _create_threshold_linear_piecewise_interpolation(
+            (1, 6),
+            (2, 11),
+            (3, 15),
+            (5, 20),
+            (10, 30),
+            (30, 40),
+        )
         if PROD_MODE else
         lambda _: 0
     )
-    TURNOVER_MULTIPLIER = utils.create_turnover_based_log_scaling(
-        base=1e9,
-        low_scale=1.2,
-        high_scale=4,
+
+    @staticmethod
+    def _create_turnover_based_log_scaling(base_turnover, scaling_factor=2):
+        """
+        :param base_turnover: in millions of $
+        """
+        return lambda x: 1 / (scaling_factor ** (log10(x) - log10(base_turnover * 1e6)))
+
+    TURNOVER_MULTIPLIER = _create_turnover_based_log_scaling(
+        base_turnover=200,
+        scaling_factor=2,
     )
