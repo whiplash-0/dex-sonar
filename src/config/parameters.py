@@ -39,7 +39,7 @@ PAIRS_FILTER = (
     ]
 )
 
-class SpikeDetector:
+class UpspikeDetector:
     @staticmethod
     def _create_threshold_linear_piecewise_interpolation(*points: tuple[int, float]):
         """

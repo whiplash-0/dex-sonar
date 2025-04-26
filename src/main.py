@@ -42,8 +42,8 @@ class Application:
         )
         self.upspike_detector = SpikeDetector(
             max_range=CONFIG.getint('Upspike detector', 'max range'),
-            threshold_function=parameters.SpikeDetector.THRESHOLD_FUNCTION,
-            turnover_multiplier=parameters.SpikeDetector.TURNOVER_MULTIPLIER,
+            threshold_function=parameters.UpspikeDetector.THRESHOLD_FUNCTION,
+            turnover_multiplier=parameters.UpspikeDetector.TURNOVER_MULTIPLIER,
             catch=Catch.UPSPIKES_ONLY,
             prefer=Prefer.MAX_CHANGE,
             cooldown=CONFIG.get_timedelta_from_minutes('Upspike detector', 'cooldown'),
