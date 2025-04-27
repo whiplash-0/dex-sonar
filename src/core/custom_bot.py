@@ -14,8 +14,8 @@ COMMANDS = [('start', 'Start the bot and get menu')]
 START_TEXT = 'Menu has been pinned to your input area'
 
 class UpspikeThreshold:
-    NAME = 'Upspike threshold'
-    TEXT = 'Adjust the upspike threshold using buttons below:'
+    NAME = UpspikeThresholdValue.get_name(title_case=True)
+    TEXT = f'Adjust the {UpspikeThresholdValue.get_name()} using buttons below:'
     STEP = 0.1
     MIN = 0.5
     MAX = 3
@@ -33,7 +33,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 class UpspikeThresholdButton(str, Enum):
     def _generate_next_value_(name, start, count, last_values):
-        return f'upspike_threshold_{count}'
+        return f'{UpspikeThresholdValue.get_name(separator="_")}_{count}'
 
     DECREASE = auto()
     VALUE = auto()

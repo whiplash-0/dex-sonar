@@ -61,6 +61,15 @@ class UpspikeThreshold:
             cls.value = cls._truncate_rounding_error(row.value)
 
     @classmethod
+    def get_name(cls, title_case=False, separator=' '):
+        name_tokens = [x.lower() for x in re.findall(r'[A-Z][a-z]*', cls.__name__)]
+        return separator.join(
+            [name_tokens[0].title(), *name_tokens[1:]]
+            if title_case else
+            name_tokens
+        )
+
+    @classmethod
     def get(cls) -> TYPE:
         return cls.value
 
