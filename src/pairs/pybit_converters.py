@@ -47,7 +47,7 @@ class Ticker(BaseModel):
 
     @model_validator(mode='before')
     @classmethod
-    def replace_empty_fields_with_none(cls, fields: dict) -> dict:
+    def _replace_empty_strings_with_none(cls, fields: dict) -> dict:
         for name, value in fields.items():
             if value == '': fields[name] = None
         return fields
