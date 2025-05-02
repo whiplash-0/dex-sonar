@@ -10,7 +10,7 @@ from requests import exceptions as requests_exceptions
 from src.core.async_tasks import AsyncConcurrentPollingTasks
 from src.pairs.pair import Pair, Symbol, TimeSeries
 from src.pairs.pairs import Pairs
-from src.pairs.pybit_converters import Convert, InstrumentInfo, Response
+from src.pairs.pybit_converters import Contract, Convert, InstrumentInfo, Response, Status
 from src.utils import time
 from src.utils.time import Cooldowns
 
@@ -56,7 +56,12 @@ class LivePairs(Pairs):
         instruments_info = await self._get_instruments_info()
 
         for ticker in tickers:
-            if not ticker.is_prelisted:
+            ii = instruments_info[ticker.symbol]
+            if (
+                    ii.contract is Contract.LINEAR_PERPETUAL and
+                    ii.status is Status.TRADING and
+                    ii.quote_coin == 'USDT'
+            ):
                 pairs.update(Pair(
                     symbol=ticker.symbol,
                     prices=TimeSeries(step=timedelta(minutes=1)),
@@ -64,9 +69,9 @@ class LivePairs(Pairs):
                     turnover=ticker.turnover,
                     open_interest=ticker.open_interest,
                     funding_rate=ticker.funding_rate,
-                    funding_interval=instruments_info[ticker.symbol].funding_interval,
+                    funding_interval=ii.funding_interval,
                     next_funding_time=ticker.next_funding_time,
-                    delisting_time=instruments_info[ticker.symbol].delisting_time,
+                    delisting_time=ii.delisting_time,
                 ))
 
         self.update(self.pairs_filter(pairs))

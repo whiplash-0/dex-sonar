@@ -39,11 +39,6 @@ class Ticker(BaseModel):
     best_bid_price: Optional[float] = Field(..., alias='bid1Price')
     best_ask_size: Optional[float] = Field(..., alias='ask1Size')
     best_bid_size: Optional[float] = Field(..., alias='bid1Size')
-    prelisting_phase: Optional[PrelistingPhase] = Field(..., alias='curPreListingPhase')
-
-    @property
-    def is_prelisted(self):
-        return self.prelisting_phase is not None
 
     @model_validator(mode='before')
     @classmethod

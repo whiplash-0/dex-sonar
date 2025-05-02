@@ -34,7 +34,6 @@ DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)  
 PAIRS_FILTER = (
     lambda pairs: [
         x for x in pairs if
-        x.contract is Contract.USDT and
         x.turnover >= CONFIG.getfloat('Pairs', 'min turnover', default=0)
     ]
 )
