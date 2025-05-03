@@ -154,6 +154,9 @@ CATEGORY = 'linear'
 QUOTE_COIN = 'USDT'
 
 # arguments
+CURSOR = 'cursor'
+
+# argument values
 LIMIT = 1000
 KLINE_INTERVAL = '1'
 
@@ -183,8 +186,11 @@ class PybitWrapper:
                     response = self.http.get_instruments_info(
                         category=CATEGORY,
                         limit=LIMIT,
+                        cursor=response[NEXT_PAGE_CURSOR] if response else None,
                     )[RESULT]
-                    response_list.extend(response[LIST])
+                    response_list.extend(
+                        response[LIST]
+                    )
                     break
 
                 except (
