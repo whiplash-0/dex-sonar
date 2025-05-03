@@ -98,7 +98,7 @@ class StreamKline(BaseModel):
 
 class Contract(str, Enum):
     """
-    Refer to: https://bybit-exchange.github.io/docs/v5/enum#status
+    Refer to: https://bybit-exchange.github.io/docs/v5/enum#contracttype
     """
     def _generate_next_value_(name, start, count, last_values):
         return ''.join([word.title() for word in name.split('_')])
