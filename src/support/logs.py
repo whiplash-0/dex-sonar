@@ -52,7 +52,7 @@ def setup_logging(
     handler.setFormatter(ColoredFormatter(format, datefmt=timestamp_format))
     root_logger.addHandler(handler)
 
-    for scope, level, debug_level in [
+    for scope, default_level, debug_level in [
         ('telegram',   WARNING,  None    ),
         ('pybit',      WARNING,  None    ),
         ('websocket',  CRITICAL, WARNING ),
@@ -62,5 +62,8 @@ def setup_logging(
         ('matplotlib', INFO,     None    ),
         ('urllib3',    WARNING,  None    ),
     ]:
-        if debug_level is None: debug_level = level
-        getLogger(scope).setLevel(level if level is DEBUG else debug_level)
+        getLogger(scope).setLevel(
+            default_level
+            if level > DEBUG or debug_level is None else
+            debug_level
+        )
