@@ -107,18 +107,6 @@ class Contract(str, Enum):
     LINEAR_FUTURES = auto()
 
 
-class Status(str, Enum):
-    """
-    Refer to: https://bybit-exchange.github.io/docs/v5/enum#status
-    """
-    def _generate_next_value_(name, start, count, last_values):
-        return ''.join([word.title() for word in name.split('_')])
-
-    PRE_LAUNCH = auto()
-    TRADING = auto()
-    CLOSED = auto()
-
-
 HOUR_IN_MINUTES = 60
 
 class InstrumentInfo(BaseModel):
@@ -131,7 +119,6 @@ class InstrumentInfo(BaseModel):
     quote_coin: str = Field(..., alias='quoteCoin')
 
     contract: Contract = Field(..., alias='contractType')
-    status: Status = Field(..., alias='status')
     launch_time: datetime = Field(..., alias='launchTime')
     delisting_time: Optional[datetime] = Field(..., alias='deliveryTime')
 
