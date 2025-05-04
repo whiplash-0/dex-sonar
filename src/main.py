@@ -72,7 +72,7 @@ class Application:
         await self.bot.init()
         await self.pairs.init()
         await UpspikeThreshold.init()
-        logger.info(f'Pairs ({len(self.pairs)}, turnover > ${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)}): ' + ', '.join([x.base_symbol for x in self.pairs]))
+        logger.info(f'Pairs ({len(self.pairs)}, turnover > ${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)}): ' + ', '.join(self.pairs.get_base_symbols()))
 
     async def task_update_pairs(self):
         try:
