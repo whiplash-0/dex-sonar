@@ -34,7 +34,7 @@ class Cooldowns(Generic[T]):
         self.cooldown = cooldown
         self.cooldown_starts: dict[T, datetime] = {}
 
-    def get_cooldown(self):
+    def get_cooldown(self) -> timedelta:
         return self.cooldown
 
     def set_for(self, key: T):
