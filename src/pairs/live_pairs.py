@@ -62,7 +62,7 @@ class LivePairs(Pairs):
         self.are_pybit_callbacks_enabled = False
 
     async def init(self):
-        await self._add_new_pairs()
+        await self._add_new_pairs_if_any()
 
 
     def are_live_updates_active(self):
@@ -86,7 +86,7 @@ class LivePairs(Pairs):
         await self.permanent_tasks.cancel_all()
 
 
-    async def _add_new_pairs(self):
+    async def _add_new_pairs_if_any(self) -> Pairs:
         pairs = Pairs()
         instruments_info = await self.pybit.get_instruments_info()
 
@@ -117,6 +117,8 @@ class LivePairs(Pairs):
             self.update(pairs)
             self._update_candles(pairs.get_symbols())
 
+        return pairs
+
     def _subscribe_to_live_updates(self, symbols: Optional[Iterable[Symbol]] = None):
         if symbols := symbols if symbols is not None else self.get_symbols():
             self.pybit.subscribe_to_ticker_updates(symbols, self._pybit_callback_on_ticker_update)
@@ -143,10 +145,9 @@ class LivePairs(Pairs):
     async def _polling_task_synchronize_pairs_list(self):
         instruments_info = await self.pybit.get_cached_instruments_info()  # to avoid waiting
 
-        if new_symbols := instruments_info.keys() - self.get_symbols():
-            await self._add_new_pairs()
-            self._subscribe_to_live_updates(new_symbols & self.get_symbols())
-            if new_symbols & self.get_symbols(): logger.info(f'Added new pairs: {", ".join([x.base_symbol for x in self if x.symbol in new_symbols])}')
+        if pairs := await self._add_new_pairs_if_any():
+            self._subscribe_to_live_updates(pairs.get_symbols)
+            logger.info(f'Added new pairs: {", ".join([x.base_symbol for x in self if x.symbol in pairs.get_symbols])}')
 
         if removed_symbols := self.get_symbols() - instruments_info.keys():
             logger.info(f'Removing pairs: {", ".join([x.base_symbol for x in self if x.symbol in removed_symbols])}')
