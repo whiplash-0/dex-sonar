@@ -3,7 +3,6 @@ from math import log10
 from os import environ
 
 from src.config.config import CONFIG
-from src.pairs.pair import Contract
 
 
 TEST_MODE = CONFIG.getboolean('Bot', 'test mode')
@@ -31,12 +30,10 @@ else:  # otherwise Heroku will add it to environment variables
 DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)  # ensure compatibility with asynchronous paradigm
 
 
-PAIRS_FILTER = (
-    lambda pairs: [
-        x for x in pairs if
-        x.turnover >= CONFIG.getfloat('Pairs', 'min turnover', default=0)
-    ]
+SHOULD_PAIR_BE_INCLUDED = (
+    lambda pair: pair.turnover >= CONFIG.getfloat('Pairs', 'min turnover', default=0)
 )
+
 
 class UpspikeDetector:
     @staticmethod

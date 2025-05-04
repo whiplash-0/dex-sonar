@@ -40,7 +40,7 @@ class Application:
                 instruments_info_update=CONFIG.get_timedelta_from_seconds('Pairs', 'instruments info update interval'),
             ),
             callback_on_price_update=self._callback_on_price_update,
-            pairs_filter=parameters.PAIRS_FILTER,
+            should_pair_be_included=parameters.SHOULD_PAIR_BE_INCLUDED,
         )
         self.upspike_detector = SpikeDetector(
             max_range=CONFIG.getint('Upspike detector', 'max range'),

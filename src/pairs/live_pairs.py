@@ -39,7 +39,7 @@ class LivePairs(Pairs):
             self,
             intervals: Intervals,
             callback_on_price_update: Callable[[Pair], None] = lambda _: None,
-            pairs_filter: Callable[[Pairs], Iterable[Pair]] = lambda _: _,
+            should_pair_be_included: Callable[[Pair], bool] = lambda _: True,
     ):
         super().__init__()
 
@@ -58,7 +58,7 @@ class LivePairs(Pairs):
         )
 
         self.callback_on_price_update = callback_on_price_update
-        self.pairs_filter = pairs_filter
+        self.should_pair_be_included = should_pair_be_included
         self.are_pybit_callbacks_enabled = False
 
     async def init(self):
@@ -97,7 +97,7 @@ class LivePairs(Pairs):
                 ii = instruments_info[symbol]
                 t = tickers[symbol]
 
-                pairs.update(Pair(
+                pair = Pair(
                     symbol=t.symbol,
 
                     prices=TimeSeries(step=timedelta(minutes=1)),
@@ -109,11 +109,13 @@ class LivePairs(Pairs):
                     funding_interval=ii.funding_interval,
                     next_funding_time=t.next_funding_time,
                     delisting_time=ii.delisting_time,
-                ))
+                )
 
-            filtered_pairs = self.pairs_filter(pairs)
-            self.update(filtered_pairs)
-            self._update_candles([x.symbol for x in filtered_pairs])
+                if self.should_pair_be_included(pair):
+                    pairs.update(pair)
+
+            self.update(pairs)
+            self._update_candles(pairs.get_symbols())
 
     def _subscribe_to_live_updates(self, symbols: Optional[Iterable[Symbol]] = None):
         if symbols := symbols if symbols is not None else self.get_symbols():
@@ -215,7 +217,12 @@ class LivePairs(Pairs):
 
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
-        for x in symbols if symbols else self.get_symbols():
+        symbols = (
+            symbols
+            if symbols is not None else
+            self.get_symbols()
+        )
+        for x in symbols:
             self._update_pair_candles(x)
 
     def _update_pair_candles(self, symbol: Symbol):
