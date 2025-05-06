@@ -222,12 +222,11 @@ class LivePairs(Pairs):
 
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
-        symbols = (
+        for x in (
             symbols
             if symbols is not None else
             self.get_symbols()
-        )
-        for x in symbols:
+        ):
             self._update_pair_candles(x)
 
     def _update_pair_candles(self, symbol: Symbol):
