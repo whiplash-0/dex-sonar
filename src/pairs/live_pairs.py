@@ -1,3 +1,4 @@
+import concurrent
 import inspect
 import logging
 from dataclasses import dataclass
@@ -220,12 +221,8 @@ class LivePairs(Pairs):
 
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
-        for x in (
-            symbols
-            if symbols is not None else
-            self.get_symbols()
-        ):
-            self._update_pair_candles(x)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # requests / urllib3 supports only 10 connections
+            executor.map(self._update_pair_candles, symbols if symbols is not None else self.get_symbols())
 
     def _update_pair_candles(self, symbol: Symbol):
         pair = self[symbol]
