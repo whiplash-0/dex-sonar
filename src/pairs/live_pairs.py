@@ -14,8 +14,8 @@ from src.utils import time
 from src.utils.time import Cooldowns
 
 
-RETRIES_ON_ERROR = 3
-RETRY_COOLDOWN = timedelta(seconds=1)
+INSTRUMENTS_INFO_RETRIES_ON_ERROR = 3
+INSTRUMENTS_INFO_RETRY_COOLDOWN = timedelta(seconds=1)
 
 CONNECTION_CHECK_RETRIES_ON_FAIL = 3
 CONNECTION_CHECK_RETRY_COOLDOWN = timedelta(seconds=1)
@@ -49,8 +49,8 @@ class LivePairs(Pairs):
         super().__init__(**kwargs)
 
         self.pybit = PybitWrapper(
-            retries_on_error=RETRIES_ON_ERROR,
-            retry_cooldown=RETRY_COOLDOWN,
+            retries_on_error=INSTRUMENTS_INFO_RETRIES_ON_ERROR,
+            retry_cooldown=INSTRUMENTS_INFO_RETRY_COOLDOWN,
         )
         self.permanent_tasks = AsyncConcurrentPollingTasks(
             (
