@@ -1,3 +1,4 @@
+import asyncio
 import concurrent
 import inspect
 import logging
@@ -15,6 +16,9 @@ from src.utils.time import Cooldowns
 
 RETRIES_ON_ERROR = 3
 RETRY_COOLDOWN = timedelta(seconds=1)
+
+CONNECTION_CHECK_RETRIES_ON_FAIL = 3
+CONNECTION_CHECK_RETRY_COOLDOWN = timedelta(seconds=1)
 
 
 logger = logging.getLogger(__name__)
@@ -49,10 +53,22 @@ class LivePairs(Pairs):
             retry_cooldown=RETRY_COOLDOWN,
         )
         self.permanent_tasks = AsyncConcurrentPollingTasks(
-            (self._polling_task_update_instruments_info, intervals.instruments_info_update),
-            (self._polling_task_check_connection,        intervals.connection_check),
-            (self._polling_task_stagger_price_updates,   intervals.price_update_staggering),
-            (self._polling_task_synchronize_pairs_list,  intervals.pairs_list_synchronization),
+            (
+                self._polling_task_update_instruments_info,
+                intervals.instruments_info_update,
+            ),
+            (
+                lambda: self._polling_task_check_connection(retries_on_fail=CONNECTION_CHECK_RETRIES_ON_FAIL, retry_cooldown=CONNECTION_CHECK_RETRY_COOLDOWN),
+                intervals.connection_check,
+            ),
+            (
+                self._polling_task_stagger_price_updates,
+                intervals.price_update_staggering,
+            ),
+            (
+                self._polling_task_synchronize_pairs_list,
+                intervals.pairs_list_synchronization,
+            ),
         )
         self.ticker_updates_cooldowns: Cooldowns[Symbol] = Cooldowns(
             cooldown=intervals.price_update,
@@ -125,8 +141,11 @@ class LivePairs(Pairs):
             self.pybit.subscribe_to_kline_updates(symbols, self._pybit_callback_on_kline_update)
 
 
-    async def _polling_task_check_connection(self):
-        if not self.pybit.is_connection_alive(): raise ConnectionLostError()
+    async def _polling_task_check_connection(self, retries_on_fail: int = 0, retry_cooldown: timedelta = timedelta()):
+        for i in range(1 + retries_on_fail):
+            if self.pybit.is_connection_alive(): return
+            await asyncio.sleep(retry_cooldown.total_seconds())
+        raise ConnectionLostError()
 
     async def _polling_task_stagger_price_updates(self):
         self._disable_pybit_callbacks()
