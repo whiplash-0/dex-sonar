@@ -51,14 +51,16 @@ class Ticker(BaseModel):
     Refer to: https://bybit-exchange.github.io/docs/v5/market/tickers
     """
     symbol: Symbol = Field(...)
+
     price: float = Field(..., alias='lastPrice')
     open_interest: float = Field(..., alias='openInterest')
     turnover: float = Field(..., alias='turnover24h')
     funding_rate: Optional[float] = Field(..., alias='fundingRate')
     next_funding_time: datetime = Field(..., alias='nextFundingTime')
+
     best_ask_price: Optional[float] = Field(..., alias='ask1Price')
-    best_bid_price: Optional[float] = Field(..., alias='bid1Price')
     best_ask_size: Optional[float] = Field(..., alias='ask1Size')
+    best_bid_price: Optional[float] = Field(..., alias='bid1Price')
     best_bid_size: Optional[float] = Field(..., alias='bid1Size')
 
     @model_validator(mode='before')
