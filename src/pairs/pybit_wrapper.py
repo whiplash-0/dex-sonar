@@ -47,6 +47,9 @@ class PrelistingPhase(str, Enum):
 
 
 class Ticker(BaseModel):
+    """
+    Refer to: https://bybit-exchange.github.io/docs/v5/market/tickers
+    """
     symbol: Symbol = Field(...)
     price: float = Field(..., alias='lastPrice')
     open_interest: float = Field(..., alias='openInterest')
@@ -67,12 +70,18 @@ class Ticker(BaseModel):
 
 
 class StreamTicker(Ticker):
+    """
+    Refer to: https://bybit-exchange.github.io/docs/v5/websocket/public/ticker
+    """
     cross_sequence: int = Field(..., alias='cs')
     timestamp: datetime = Field(..., alias='ts')
 
 
 
 class Kline(BaseModel):
+    """
+    Refer to: https://bybit-exchange.github.io/docs/v5/market/kline
+    """
     starts: list[datetime] = Field(...)
     opens: list[float] = Field(...)
     highs: list[float] = Field(...)
@@ -83,6 +92,9 @@ class Kline(BaseModel):
 
 
 class StreamKline(BaseModel):
+    """
+    Refer to: https://bybit-exchange.github.io/docs/v5/websocket/public/kline
+    """
     symbol: Symbol = Field(...)
     start: datetime = Field(..., alias='start')
     end: datetime = Field(..., alias='end')
@@ -111,6 +123,8 @@ HOUR_IN_MINUTES = 60
 
 class InstrumentInfo(BaseModel):
     """
+    Refer to: https://bybit-exchange.github.io/docs/v5/market/instrument
+
     :param funding_interval: In hours
     """
     symbol: Symbol = Field(...)
