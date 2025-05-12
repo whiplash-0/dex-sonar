@@ -160,6 +160,7 @@ class LivePairs(Pairs):
         instruments_info = await self.pybit.get_instruments_info()
         for symbol, pair in self.pairs.items():
             pair.funding_interval = instruments_info[symbol].funding_interval
+            pair.delisting_time = instruments_info[symbol].delisting_time,
 
     async def _polling_task_synchronize_pairs_list(self):
         instruments_info_symbols = (await self.pybit.get_cached_instruments_info()).keys()  # to avoid waiting
