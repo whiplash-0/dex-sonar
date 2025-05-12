@@ -152,7 +152,7 @@ class LivePairs(Pairs):
 
         timestamp = time.get_timestamp()
         delta = self.ticker_updates_cooldowns.get_cooldown() / (len(self) - 1) if len(self) > 1 else timedelta(0)
-        for i, x in enumerate(self.pairs): self.ticker_updates_cooldowns.set_start_for(x, timestamp + delta * i - self.ticker_updates_cooldowns.get_cooldown())
+        for i, x in enumerate(self): self.ticker_updates_cooldowns.set_start_for(x, timestamp + delta * i - self.ticker_updates_cooldowns.get_cooldown())
 
         self._enable_pybit_callbacks()
 
