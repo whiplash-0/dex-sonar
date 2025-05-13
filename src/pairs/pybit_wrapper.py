@@ -131,8 +131,8 @@ class InstrumentInfo(BaseModel):
     """
     symbol: Symbol = Field(...)
 
-    base_coin: str = Field(..., alias='baseCoin')
-    quote_coin: str = Field(..., alias='quoteCoin')
+    base_symbol: Symbol = Field(..., alias='baseCoin')
+    quote_symbol: Symbol = Field(..., alias='quoteCoin')
 
     contract: Contract = Field(..., alias='contractType')
     launch_time: datetime = Field(..., alias='launchTime')
@@ -227,7 +227,7 @@ class PybitWrapper:
                 x.symbol: x for x in instruments_info
                 if (
                         x.contract is Contract.LINEAR_PERPETUAL and
-                        x.quote_coin == QUOTE_COIN
+                        x.quote_symbol == QUOTE_COIN
                 )
             }
 
