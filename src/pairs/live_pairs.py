@@ -105,7 +105,7 @@ class LivePairs(Pairs):
 
     async def _add_new_pairs_if_any(self) -> Pairs:
         pairs = []
-        instruments_info = await self.pybit.get_instruments_info()
+        instruments_info = await self.pybit.get_instruments_info(cached=True)
         tickers = self.pybit.get_tickers()
 
         if new_symbols := instruments_info.keys() & tickers.keys() - self.get_symbols():
@@ -167,7 +167,7 @@ class LivePairs(Pairs):
             pair.delisting_time = ii.delisting_time,
 
     async def _polling_task_synchronize_pairs_list(self):
-        instruments_info_symbols = (await self.pybit.get_cached_instruments_info()).keys()  # to avoid waiting
+        instruments_info_symbols = (await self.pybit.get_instruments_info(cached=True)).keys()  # to avoid waiting
 
         if instruments_info_symbols != self.cached_instruments_info_symbols:  # to also avoid extra waiting
             self.cached_instruments_info_symbols = set(instruments_info_symbols)

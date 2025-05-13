@@ -230,9 +230,6 @@ class PybitWrapper:
 
             return self.cached_instruments_info
 
-    async def get_cached_instruments_info(self) -> dict[Symbol, InstrumentInfo]:
-        return self.cached_instruments_info
-
     def get_tickers(self) -> dict[Symbol, Ticker]:
         tickers = [
             Ticker(**x)
