@@ -181,50 +181,54 @@ class PybitWrapper:
     def subscribe_to_kline_updates(self, symbols: Iterable[Symbol], callback: Callable[[Response], None]):
         self.websocket.kline_stream(KLINE_INTERVAL, symbols, callback)
 
-    async def get_instruments_info(self) -> dict[Symbol, InstrumentInfo]:
-        response_list = []
-        response = None
+    async def get_instruments_info(self, cached=False) -> dict[Symbol, InstrumentInfo]:
+        if cached and self.cached_instruments_info:
+            return self.cached_instruments_info
 
-        while response is None or response[NEXT_PAGE_CURSOR] != '':  # ensure there are no more pages
+        else:
+            response_list = []
+            response = None
 
-            for i in range(1 + self.retries_on_error):
-                try:
-                    response = self.http.get_instruments_info(
-                        category=CATEGORY,
-                        limit=LIMIT,
-                        cursor=response[NEXT_PAGE_CURSOR] if response else None,
-                    )[RESULT]
-                    response_list.extend(
-                        response[LIST]
-                    )
-                    break
+            while response is None or response[NEXT_PAGE_CURSOR] != '':  # ensure there are no more pages
 
-                except (
-                        requests_exceptions.ReadTimeout,
-                        requests_exceptions.ConnectionError
-                ) as e:
-                    logger.warning(
-                        f'{inspect.currentframe().f_code.co_name}(): Got \'{e}\'' +
-                        (f'. Retrying in {self.retry_cooldown.total_seconds():.1f}s' if i < self.retries_on_error else '')
-                    )
+                for i in range(1 + self.retries_on_error):
+                    try:
+                        response = self.http.get_instruments_info(
+                            category=CATEGORY,
+                            limit=LIMIT,
+                            cursor=response[NEXT_PAGE_CURSOR] if response else None,
+                        )[RESULT]
+                        response_list.extend(
+                            response[LIST]
+                        )
+                        break
 
-                    if i == self.retries_on_error:
-                        raise
+                    except (
+                            requests_exceptions.ReadTimeout,
+                            requests_exceptions.ConnectionError
+                    ) as e:
+                        logger.warning(
+                            f'{inspect.currentframe().f_code.co_name}(): Got \'{e}\'' +
+                            (f'. Retrying in {self.retry_cooldown.total_seconds():.1f}s' if i < self.retries_on_error else '')
+                        )
 
-                    await asyncio.sleep(self.retry_cooldown.total_seconds())
+                        if i == self.retries_on_error:
+                            raise
 
-        instruments_info = [
-            InstrumentInfo(**x) for x in response_list
-        ]
-        self.cached_instruments_info = {
-            x.symbol: x for x in instruments_info
-            if (
-                    x.contract is Contract.LINEAR_PERPETUAL and
-                    x.quote_coin == QUOTE_COIN
-            )
-        }
+                        await asyncio.sleep(self.retry_cooldown.total_seconds())
 
-        return self.cached_instruments_info
+            instruments_info = [
+                InstrumentInfo(**x) for x in response_list
+            ]
+            self.cached_instruments_info = {
+                x.symbol: x for x in instruments_info
+                if (
+                        x.contract is Contract.LINEAR_PERPETUAL and
+                        x.quote_coin == QUOTE_COIN
+                )
+            }
+
+            return self.cached_instruments_info
 
     async def get_cached_instruments_info(self) -> dict[Symbol, InstrumentInfo]:
         return self.cached_instruments_info

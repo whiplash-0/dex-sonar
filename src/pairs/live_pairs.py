@@ -106,9 +106,9 @@ class LivePairs(Pairs):
     async def _add_new_pairs_if_any(self) -> Pairs:
         pairs = []
         instruments_info = await self.pybit.get_instruments_info()
+        tickers = self.pybit.get_tickers()
 
-        if new_symbols := instruments_info.keys() - self.get_symbols():
-            tickers = self.pybit.get_tickers()
+        if new_symbols := instruments_info.keys() & tickers.keys() - self.get_symbols():
 
             for symbol in new_symbols:
                 ii = instruments_info[symbol]
