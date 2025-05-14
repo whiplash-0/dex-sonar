@@ -214,7 +214,7 @@ class LiveContracts(Contracts):
                 self.callback_on_price_update(contract)
 
         except Exception:
-            logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}` caught exception'); raise
+            logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}()` caught exception'); raise
 
     def _pybit_callback_on_kline_update(self, response: Response):
         """
@@ -240,7 +240,7 @@ class LiveContracts(Contracts):
                 )
 
         except Exception:
-            logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}` caught exception'); raise
+            logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}()` caught exception'); raise
 
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
