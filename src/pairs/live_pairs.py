@@ -7,7 +7,7 @@ from datetime import timedelta
 from typing import Callable, Iterable, Optional
 
 from src.core.async_tasks import AsyncConcurrentPollingTasks
-from src.pairs.pair import Pair, Symbol, TimeSeries
+from src.pairs.pair import Pair, Symbol
 from src.pairs.pairs import Pairs
 from src.pairs.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
 from src.utils import time
@@ -120,9 +120,6 @@ class LivePairs(Pairs):
                     quote_symbol=ii.quote_symbol,
 
                     delisting_time=ii.delisting_time,
-
-                    prices=TimeSeries(step=timedelta(minutes=1)),
-                    turnovers=TimeSeries(step=timedelta(minutes=1)),
 
                     turnover=t.turnover,
                     funding_rate=t.funding_rate,

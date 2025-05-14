@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from datetime import datetime, tzinfo
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, tzinfo
 from typing import Iterable, Optional
 from zoneinfo import ZoneInfo
 
@@ -10,9 +10,13 @@ from matplotlib.ticker import MaxNLocator, PercentFormatter
 from src.support.time_series import Index, TimeSeries
 
 
+CANDLE_TIMEFRAME = timedelta(minutes=1)
+
+
 Symbol = str
 Price = float
 Turnover = float
+
 
 
 @dataclass
@@ -27,15 +31,21 @@ class Pair:
 
     delisting_time: Optional[datetime]
 
-    prices: TimeSeries[Price]
-    turnovers: TimeSeries[Turnover]
+    prices: TimeSeries[Price] = field(init=False)
+    turnovers: TimeSeries[Turnover] = field(init=False)
 
     turnover: Turnover
     funding_rate: Optional[float]
     funding_interval: int
     next_funding_time: datetime
 
+
     BASE_SYMBOL_MAX_LEN = 14
+
+
+    def __post_init__(self):
+        self.prices = TimeSeries(step=CANDLE_TIMEFRAME)
+        self.turnovers = TimeSeries(step=CANDLE_TIMEFRAME)
 
     def __eq__(self, other):
         return other.symbol == self.symbol if isinstance(other, Pair) else False
