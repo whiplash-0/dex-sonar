@@ -4,9 +4,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from src.utils import utils
 from src.utils.paths import Paths
 from src.utils.time import Timedelta
+from src.utils.utils import NumericUnit
 
 
 DEFAULT_PRESET = 'default'
@@ -31,13 +31,35 @@ class Config(RawConfigParser):
     def read(self, name: str, **kwargs):
         super().read(self.directory_path / (name + '.ini'), **kwargs)
 
-    def getint(self, section, option, default: int = None, **kwargs) -> int | None:
-        if string := self.get(section, option, **kwargs): return utils.parse_large_number(string, as_type=int)
-        else: return default
+    def getint(
+            self,
+            section,
+            option,
+            unit: NumericUnit = NumericUnit.ONE,
+            default: int = None,
+            **kwargs,
+    ) -> int | None:
 
-    def getfloat(self, section, option, default: float = None, **kwargs) -> float | None:
-        if string := self.get(section, option, **kwargs): return utils.parse_large_number(string, as_type=float)
-        else: return default
+        return (
+            super().getint(section, option, **kwargs) * unit
+            if self.get(section, option, **kwargs) else
+            (default * unit if default is not None else default)
+        )
+
+    def getfloat(
+            self,
+            section,
+            option,
+            unit: NumericUnit = NumericUnit.ONE,
+            default: float = None,
+            **kwargs,
+    ) -> float | None:
+
+        return (
+            super().getfloat(section, option, **kwargs) * unit
+            if self.get(section, option, **kwargs) else
+            (default * unit if default is not None else default)
+        )
 
     def get_percent(self, section, option, default: float = None, **kwargs) -> float | None:
         """

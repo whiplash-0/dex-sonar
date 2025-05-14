@@ -3,6 +3,7 @@ from math import log10
 from os import environ
 
 from src.config.config import CONFIG
+from src.utils.utils import NumericUnit
 
 
 TEST_MODE = CONFIG.getboolean('Bot', 'test mode')
@@ -31,7 +32,7 @@ DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)  
 
 
 SHOULD_CONTRACT_BE_INCLUDED = (
-    lambda contract: contract.turnover >= CONFIG.getfloat('Contracts', 'min turnover', default=0)
+    lambda contract: contract.turnover >= CONFIG.getfloat('Contracts', 'min turnover', unit=NumericUnit.MILLION, default=0)
 )
 
 
