@@ -10,6 +10,7 @@ MIN_TIMESTAMP = datetime.min.replace(tzinfo=timezone.utc)
 Second = float
 
 
+
 def get_timestamp() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -27,7 +28,9 @@ def ceil_timestamp_minute(ts: datetime) -> datetime:
     return ts if not ceiled_part else ts - ceiled_part + timedelta(minutes=1)
 
 
+
 T = TypeVar('T', bound=Hashable)
+
 
 class Cooldowns(Generic[T]):
     def __init__(self, cooldown: timedelta):
@@ -47,6 +50,7 @@ class Cooldowns(Generic[T]):
         return get_time_passed_since(self.cooldown_starts.get(key, MIN_TIMESTAMP)) <= self.cooldown
 
 
+
 @dataclass
 class _TimeUnit:
     name: str
@@ -54,6 +58,7 @@ class _TimeUnit:
 
     def format(self, units: int, shorten: bool = False) -> str:
         return f'{units}{(" " if not shorten else "")}{self.name if not shorten else self.name[0]}{"" if units == 1 or shorten else "s"}'
+
 
 _time_units = [
     _TimeUnit(*x) for x in
@@ -66,6 +71,7 @@ _time_units = [
         ('year', timedelta(days=365)),
     ]
 ]
+
 
 def format_timedelta(td: timedelta, shorten: bool = False) -> str:
     for tu in reversed(_time_units):
