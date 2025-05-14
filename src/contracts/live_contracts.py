@@ -10,6 +10,7 @@ from src.contracts.contract import Contract, Symbol
 from src.contracts.contracts import Contracts
 from src.contracts.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
 from src.core.async_tasks import AsyncConcurrentPollingTasks
+from src.support import time_series
 from src.utils import time
 from src.utils.time import Cooldowns
 
@@ -214,7 +215,7 @@ class LiveContracts(Contracts):
                 self.callback_on_price_update(contract)
 
         except Exception:
-            logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}()` caught exception'); raise
+            logger.exception(f'`{inspect.currentframe().f_code.co_name}()`: Caught exception:'); raise
 
     def _pybit_callback_on_kline_update(self, response: Response):
         """
@@ -239,8 +240,12 @@ class LiveContracts(Contracts):
                     is_final=True,
                 )
 
+        except time_series.InvalidTimeRange:  # fill candle gaps, often happens when websocket connection is temporarily lost
+            logger.warning(f'`{inspect.currentframe().f_code.co_name}()`: Detected time gap in candles. Updating all contracts\' candles manually')
+            self._update_candles()
+
         except Exception:
-            logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}()` caught exception'); raise
+            logger.exception(f'`{inspect.currentframe().f_code.co_name}()`: Caught exception:'); raise
 
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
