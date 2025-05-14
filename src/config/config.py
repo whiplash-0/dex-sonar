@@ -33,7 +33,7 @@ class Config(RawConfigParser):
         super().read(self.directory_path / (name + '.' + CONFIG_EXTENSION), **kwargs)
 
 
-    def getint(
+    def get_int(
             self,
             section,
             option,
@@ -48,7 +48,7 @@ class Config(RawConfigParser):
             (default * unit if default is not None else default)
         )
 
-    def getfloat(
+    def get_float(
             self,
             section,
             option,
@@ -89,7 +89,7 @@ class Config(RawConfigParser):
     ) -> Timedelta | None:
 
         return (
-            Timedelta(seconds=self.getint(section, option, **kwargs))
+            Timedelta(seconds=self.get_int(section, option, **kwargs))
             if self.get(section, option, **kwargs) else
             default
         )
@@ -103,7 +103,7 @@ class Config(RawConfigParser):
     ) -> Timedelta | None:
 
         return (
-            Timedelta(minutes=self.getint(section, option, **kwargs))
+            Timedelta(minutes=self.get_int(section, option, **kwargs))
             if self.get(section, option, **kwargs) else
             default
         )
@@ -117,7 +117,7 @@ class Config(RawConfigParser):
     ) -> Timedelta | None:
 
         return (
-            Timedelta(hours=self.getint(section, option, **kwargs))
+            Timedelta(hours=self.get_int(section, option, **kwargs))
             if self.get(section, option, **kwargs) else
             default
         )

@@ -47,7 +47,7 @@ class Application:
             should_contract_be_included=parameters.SHOULD_CONTRACT_BE_INCLUDED,
         )
         self.upspike_detector = SpikeDetector(
-            max_range=CONFIG.getint('Upspike detector', 'max range'),
+            max_range=CONFIG.get_int('Upspike detector', 'max range'),
             threshold_function=parameters.UpspikeDetector.THRESHOLD_FUNCTION,
             turnover_multiplier=parameters.UpspikeDetector.TURNOVER_MULTIPLIER,
             catch=Catch.UPSPIKES_ONLY,
