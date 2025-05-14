@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Callable, Iterable, Optional
 
+from src.contracts.contract import Contract, Symbol
+from src.contracts.contracts import Contracts
+from src.contracts.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
 from src.core.async_tasks import AsyncConcurrentPollingTasks
-from src.pairs.pair import Pair, Symbol
-from src.pairs.pairs import Pairs
-from src.pairs.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
 from src.utils import time
 from src.utils.time import Cooldowns
 
@@ -31,19 +31,19 @@ class ConnectionLostError(ConnectionError):
 
 @dataclass
 class Intervals:
-    price_update:                     timedelta = timedelta(seconds=5)
-    price_update_staggering:          timedelta = timedelta(seconds=30)
-    instruments_info_update:          timedelta = timedelta(seconds=60)
-    pairs_list_synchronization:       timedelta = timedelta(seconds=60)
-    connection_check:                 timedelta = timedelta(seconds=1)
+    price_update:                          timedelta = timedelta(seconds=5)
+    price_update_staggering:               timedelta = timedelta(seconds=30)
+    instruments_info_update:               timedelta = timedelta(seconds=60)
+    contracts_synchronization_with_server: timedelta = timedelta(seconds=60)
+    connection_check:                      timedelta = timedelta(seconds=1)
 
 
 
-class LivePairs(Pairs):
+class LiveContracts(Contracts):
     def __init__(
             self,
             intervals: Intervals,
-            callback_on_price_update: Callable[[Pair], None] = lambda _: None,
+            callback_on_price_update: Callable[[Contract], None] = lambda _: None,
             **kwargs,
     ):
         super().__init__(**kwargs)
@@ -66,8 +66,8 @@ class LivePairs(Pairs):
                 intervals.price_update_staggering,
             ),
             (
-                self._polling_task_synchronize_pairs_list,
-                intervals.pairs_list_synchronization,
+                self._polling_task_synchronize_contracts_with_server,
+                intervals.contracts_synchronization_with_server,
             ),
         )
         self.ticker_updates_cooldowns: Cooldowns[Symbol] = Cooldowns(
@@ -79,7 +79,7 @@ class LivePairs(Pairs):
         self.cached_instruments_info_symbols: set[Symbol] = set()
 
     async def init(self):
-        await self._add_new_pairs_if_any()
+        await self._add_new_contracts_if_any()
 
 
     def are_live_updates_active(self):
@@ -103,8 +103,8 @@ class LivePairs(Pairs):
         await self.permanent_tasks.cancel_all()
 
 
-    async def _add_new_pairs_if_any(self) -> Pairs:
-        pairs = []
+    async def _add_new_contracts_if_any(self) -> Contracts:
+        contracts = []
         instruments_info = await self.pybit.get_instruments_info(cached=True)
         tickers = self.pybit.get_tickers()
 
@@ -113,7 +113,7 @@ class LivePairs(Pairs):
             for symbol in new_symbols:
                 ii = instruments_info[symbol]
                 t = tickers[symbol]
-                pairs.append(Pair(
+                contracts.append(Contract(
                     symbol=t.symbol,
 
                     base_symbol=ii.base_symbol,
@@ -127,13 +127,13 @@ class LivePairs(Pairs):
                     next_funding_time=t.next_funding_time,
                 ))
 
-            pairs = self.extend(pairs)
-            self._update_candles(pairs.get_symbols())
+            contracts = self.extend(contracts)
+            self._update_candles(contracts.get_symbols())
 
         else:
-            pairs = Pairs()
+            contracts = Contracts()
 
-        return pairs
+        return contracts
 
     def _subscribe_to_live_updates(self, symbols: Optional[Iterable[Symbol]] = None):
         if symbols := symbols if symbols is not None else self.get_symbols():
@@ -160,24 +160,24 @@ class LivePairs(Pairs):
         instruments_info = await self.pybit.get_instruments_info()
 
         for symbol in self.get_symbols() & instruments_info.keys():
-            pair = self[symbol]
+            contract = self[symbol]
             ii = instruments_info[symbol]
 
-            pair.funding_interval = ii.funding_interval
-            pair.delisting_time = ii.delisting_time,
+            contract.funding_interval = ii.funding_interval
+            contract.delisting_time = ii.delisting_time,
 
-    async def _polling_task_synchronize_pairs_list(self):
+    async def _polling_task_synchronize_contracts_with_server(self):
         instruments_info_symbols = (await self.pybit.get_instruments_info(cached=True)).keys()  # to avoid waiting
 
         if instruments_info_symbols != self.cached_instruments_info_symbols:  # to also avoid extra waiting
             self.cached_instruments_info_symbols = set(instruments_info_symbols)
 
-            if pairs := await self._add_new_pairs_if_any():
-                self._subscribe_to_live_updates(pairs.get_symbols())
-                logger.info(f'Added new pairs: {", ".join(pairs.get_base_symbols())}')
+            if contracts := await self._add_new_contracts_if_any():
+                self._subscribe_to_live_updates(contracts.get_symbols())
+                logger.info(f'Added new contracts: {", ".join(contracts.get_base_symbols())}')
 
             if removed_symbols := self.get_symbols() - instruments_info_symbols:
-                logger.info(f'Removing pairs: {", ".join(self[removed_symbols].get_base_symbols())}')
+                logger.info(f'Removing contracts: {", ".join(self[removed_symbols].get_base_symbols())}')
                 self.remove(removed_symbols)
 
 
@@ -201,24 +201,24 @@ class LivePairs(Pairs):
                 self.ticker_updates_cooldowns.set_for(symbol)
 
                 ticker = self.pybit.parse_stream_ticker(response)
-                pair = self[symbol]
+                contract = self[symbol]
 
-                pair.prices.update(
+                contract.prices.update(
                     ticker.price,
                     time.ceil_timestamp_minute(ticker.timestamp),
                 )
-                pair.turnover = ticker.turnover
-                pair.funding_rate = ticker.funding_rate
-                pair.next_funding_time = ticker.next_funding_time
+                contract.turnover =          ticker.turnover
+                contract.funding_rate =      ticker.funding_rate
+                contract.next_funding_time = ticker.next_funding_time
 
-                self.callback_on_price_update(pair)
+                self.callback_on_price_update(contract)
 
         except Exception:
             logger.exception(f'Callback `{inspect.currentframe().f_code.co_name}` caught exception'); raise
 
     def _pybit_callback_on_kline_update(self, response: Response):
         """
-        Updates pairs' prices and turnovers every minute when the current candlestick is closed
+        Updates contracts' prices and turnovers every minute when the current candlestick is closed
         """
         try:
             if not self._are_pybit_callbacks_enabled():
@@ -226,14 +226,14 @@ class LivePairs(Pairs):
 
             if response[DATA][0][CONFIRM]:  # if candlestick is final
                 kline = self.pybit.parse_stream_kline(response)
-                pair = self[kline.symbol]
+                contract = self[kline.symbol]
 
-                pair.prices.update(
+                contract.prices.update(
                     kline.close,
                     time.ceil_timestamp_minute(kline.end),
                     is_final=True,
                 )
-                pair.turnovers.update(
+                contract.turnovers.update(
                     kline.turnover,
                     time.ceil_timestamp_minute(kline.end),
                     is_final=True,
@@ -245,30 +245,30 @@ class LivePairs(Pairs):
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # requests / urllib3 supports only 10 connections
-            executor.map(self._update_pair_candles, symbols if symbols is not None else self.get_symbols())
+            executor.map(self._update_contract_candles, symbols if symbols is not None else self.get_symbols())
 
-    def _update_pair_candles(self, symbol: Symbol):
-        pair = self[symbol]
+    def _update_contract_candles(self, symbol: Symbol):
+        contract = self[symbol]
         kline = self.pybit.get_kline(symbol, from_past_to_present=True)
 
         # confirmed (closed) candles
-        pair.prices.update(
+        contract.prices.update(
             kline.closes[:-1],
             kline.starts[1:],
             is_final=True,
         )
-        pair.turnovers.update(
+        contract.turnovers.update(
             kline.turnovers[:-1],
             kline.starts[1:],
             is_final=True,
         )
 
         # last unconfirmed (unknown status) candle
-        pair.prices.update(
+        contract.prices.update(
             kline.closes[-1],
-            kline.starts[-1] + pair.prices.get_time_step(),
+            kline.starts[-1] + contract.prices.get_time_step(),
         )
-        pair.turnovers.update(
+        contract.turnovers.update(
             kline.turnovers[-1],
-            kline.starts[-1] + pair.turnovers.get_time_step(),
+            kline.starts[-1] + contract.turnovers.get_time_step(),
         )

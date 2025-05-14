@@ -3,9 +3,9 @@ from datetime import timedelta
 from enum import Enum, auto
 from typing import Callable, Optional
 
-from src.pairs.pair import Pair, Turnover
-from src.support.upspike_threshold import UpspikeThreshold
+from src.contracts.contract import Contract, Turnover
 from src.support.time_series import Index
+from src.support.upspike_threshold import UpspikeThreshold
 from src.utils.time import Cooldowns
 
 
@@ -46,21 +46,21 @@ class SpikeDetector:
         self.turnover_multiplier = turnover_multiplier
         self.catch = catch
         self.prefer = prefer
-        self.pairs_cooldowns = Cooldowns(cooldown=cooldown)
+        self.contracts_cooldowns = Cooldowns(cooldown=cooldown)
 
-    def detect(self, pair: Pair) -> Optional[Spike]:
-        if not self.pairs_cooldowns.is_in_cooldown(pair):
+    def detect(self, contract: Contract) -> Optional[Spike]:
+        if not self.contracts_cooldowns.is_in_cooldown(contract):
 
             # calculate changes and minimal thresholds over given time range
-            prices = pair.prices
+            prices = contract.prices
             actual_max_range = min(self.max_range, len(prices) - 1)  # avoid having max range longer than actual range
-            changes = [(pair.price - x) / x for x in prices[-2:-(actual_max_range + 1) - 1:-1]]  # from first change (2-nd candle) to last
+            changes = [(contract.price - x) / x for x in prices[-2:-(actual_max_range + 1) - 1:-1]]  # from first change (2-nd candle) to last
 
             if self.catch is not Catch.ALL_SPIKES:  # trick to make Mode work and include only relevant changes
                 changes = [max(x, 0) if self.catch is Catch.UPSPIKES_ONLY else min(x, 0) for x in changes]
 
             thresholds = [  # align ordinal with minute duration that function accepts by adding 1
-                self.threshold_function(1 + i) * self.turnover_multiplier(pair.turnover) * UpspikeThreshold.get()
+                self.threshold_function(1 + i) * self.turnover_multiplier(contract.turnover) * UpspikeThreshold.get()
                 for i in range(len(changes))
             ]
 
@@ -73,7 +73,7 @@ class SpikeDetector:
                 for i, (x, y) in enumerate(zip(absolute_changes, thresholds))
                 if x >= y
             ]:
-                self.pairs_cooldowns.set_for(pair)
+                self.contracts_cooldowns.set_for(contract)
 
                 match self.prefer:
                     case Prefer.MAX_CHANGE:    spike_index = max(indices, key=lambda i: absolute_changes[i])

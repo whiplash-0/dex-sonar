@@ -20,7 +20,7 @@ Turnover = float
 
 
 @dataclass
-class Pair:
+class Contract:
     """
     :param funding_interval: In hours
     """
@@ -48,7 +48,7 @@ class Pair:
         self.turnovers = TimeSeries(step=CANDLE_TIMEFRAME)
 
     def __eq__(self, other):
-        return other.symbol == self.symbol if isinstance(other, Pair) else False
+        return other.symbol == self.symbol if isinstance(other, Contract) else False
 
     def __hash__(self):
         return hash(self.symbol)

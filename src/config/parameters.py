@@ -30,8 +30,8 @@ else:  # otherwise Heroku will add it to environment variables
 DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)  # ensure compatibility with asynchronous paradigm
 
 
-SHOULD_PAIR_BE_INCLUDED = (
-    lambda pair: pair.turnover >= CONFIG.getfloat('Pairs', 'min turnover', default=0)
+SHOULD_CONTRACT_BE_INCLUDED = (
+    lambda contract: contract.turnover >= CONFIG.getfloat('Contracts', 'min turnover', default=0)
 )
 
 

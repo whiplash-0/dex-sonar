@@ -5,17 +5,20 @@ from datetime import datetime, timedelta
 
 from src.config import parameters
 from src.config.config import CONFIG
+from src.contracts import live_contracts
+from src.contracts.contract import Contract
+from src.contracts.live_contracts import Intervals, LiveContracts
 from src.core.async_tasks import AsyncConcurrentTasks, AsyncSequentialTasks
 from src.core.custom_bot import CustomBot
 from src.core.message import SpikeMessage
 from src.core.spike_detector import Catch, Prefer, Spike, SpikeDetector
-from src.pairs import live_pairs
-from src.pairs.live_pairs import Intervals, LivePairs
-from src.pairs.pair import Pair
 from src.support import logs
 from src.support.upspike_threshold import UpspikeThreshold
 from src.utils import time
 from src.utils.utils import format_large_number
+
+
+POLLING_INTERVAL_UPDATE_BOT_STATUS = timedelta(minutes=1)
 
 
 logs.setup_logging(
@@ -27,6 +30,7 @@ logs.setup_logging(
 logger = logging.getLogger(__name__)
 
 
+
 class Application:
     def __init__(self):
         self.bot = CustomBot(
@@ -34,13 +38,13 @@ class Application:
             token_silent=parameters.SILENT_BOT_TOKEN,
             whitelist=[parameters.USER_ID],
         )
-        self.pairs = LivePairs(
+        self.contracts = LiveContracts(
             intervals=Intervals(
-                price_update=CONFIG.get_timedelta_from_seconds('Pairs', 'price update interval'),
-                instruments_info_update=CONFIG.get_timedelta_from_seconds('Pairs', 'instruments info update interval'),
+                price_update=CONFIG.get_timedelta_from_seconds('Contracts', 'price update interval'),
+                instruments_info_update=CONFIG.get_timedelta_from_seconds('Contracts', 'instruments info update interval'),
             ),
             callback_on_price_update=self._callback_on_price_update,
-            should_pair_be_included=parameters.SHOULD_PAIR_BE_INCLUDED,
+            should_contract_be_included=parameters.SHOULD_CONTRACT_BE_INCLUDED,
         )
         self.upspike_detector = SpikeDetector(
             max_range=CONFIG.getint('Upspike detector', 'max range'),
@@ -54,9 +58,9 @@ class Application:
             self.init(),
             self.bot.run(
                 AsyncConcurrentTasks(
-                    self.task_update_bot_status(polling_interval=timedelta(minutes=1)),
-                    self.task_update_pairs(),
-                    self.task_handle_callbacks_from_live_pairs(),
+                    self.task_update_bot_status(polling_interval=POLLING_INTERVAL_UPDATE_BOT_STATUS),
+                    self.task_update_contracts(),
+                    self.task_handle_callbacks_from_live_contracts(),
                 ).run(blocking=True)
             ),
         )
@@ -70,20 +74,20 @@ class Application:
 
     async def init(self):
         await self.bot.init()
-        await self.pairs.init()
+        await self.contracts.init()
         await UpspikeThreshold.init()
-        logger.info(f'Pairs ({len(self.pairs)}, turnover > ${format_large_number(self.pairs.get_sorted_by_turnover()[-1].turnover)}): ' + ', '.join(self.pairs.get_base_symbols()))
+        logger.info(f'Contracts ({len(self.contracts)}, turnover > ${format_large_number(self.contracts.get_sorted_by_turnover()[-1].turnover)}): ' + ', '.join(self.contracts.get_base_symbols()))
 
-    async def task_update_pairs(self):
+    async def task_update_contracts(self):
         try:
-            await self.pairs.start_live_updates()
+            await self.contracts.start_live_updates()
 
-        except live_pairs.ConnectionLostError:
+        except live_contracts.ConnectionLostError:
             logger.error('Websocket connection lost. Stopping bot')
             raise asyncio.CancelledError()
 
         finally:
-            await self.pairs.stop_live_updates()
+            await self.contracts.stop_live_updates()
 
     async def task_update_bot_status(self, polling_interval: timedelta):
         try:
@@ -97,25 +101,25 @@ class Application:
         finally:
             await self.bot.remove_description()
 
-    def _callback_on_price_update(self, pair: Pair):
+    def _callback_on_price_update(self, contract: Contract):
         if (
-                not pair.is_being_delisted and
-                abs(pair.funding_rate_per_day) <= CONFIG.get_percent('Upspike detector', 'max funding rate') and
-                (upspike := self.upspike_detector.detect(pair))
+                not contract.is_being_delisted and
+                abs(contract.funding_rate_per_day) <= CONFIG.get_percent('Upspike detector', 'max funding rate') and
+                (upspike := self.upspike_detector.detect(contract))
         ):
-            logger.info(f'{pair.base_symbol + ":":>{pair.BASE_SYMBOL_MAX_LEN + 1}} {upspike.change:+.1%}')
-            self.tasks.schedule_task_in_async_thread(self.callback_queue.put((pair, upspike, time.get_monotonic())))
+            logger.info(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} {upspike.change:+.1%}')
+            self.tasks.schedule_task_in_async_thread(self.callback_queue.put((contract, upspike, time.get_monotonic())))
 
-    async def task_handle_callbacks_from_live_pairs(self):
+    async def task_handle_callbacks_from_live_contracts(self):
         while True:
-            pair, upspike, start_time = await self.callback_queue.get()
-            logger.debug(f'{pair.base_symbol + ":":>{pair.BASE_SYMBOL_MAX_LEN + 1}} Delay before callback: {time.get_monotonic() - start_time:.1f}s'); start_time = time.get_monotonic()
-            await self._callback_on_price_update_async(pair, upspike)
-            logger.debug(f'{pair.base_symbol + ":":>{pair.BASE_SYMBOL_MAX_LEN + 1}} Callback executed in:  {time.get_monotonic() - start_time:.1f}s. Left: {self.callback_queue.qsize()}')
+            contract, upspike, start_time = await self.callback_queue.get()
+            logger.debug(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} Delay before callback: {time.get_monotonic() - start_time:.1f}s'); start_time = time.get_monotonic()
+            await self._callback_on_price_update_async(contract, upspike)
+            logger.debug(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} Callback executed in:  {time.get_monotonic() - start_time:.1f}s. Left: {self.callback_queue.qsize()}')
 
-    async def _callback_on_price_update_async(self, pair: Pair, upspike: Spike):
+    async def _callback_on_price_update_async(self, contract: Contract, upspike: Spike):
         message = SpikeMessage(
-            pair=pair,
+            contract=contract,
             spike=upspike,
             timezone=CONFIG.get_timezone('Chart', 'timezone')
         )
@@ -124,6 +128,7 @@ class Application:
             text=message.get_text(),
             image=message.get_image(),
         )
+
 
 
 if __name__ == '__main__':

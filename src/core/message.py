@@ -5,9 +5,9 @@ from zoneinfo import ZoneInfo
 from aiogram.utils import markdown
 from matplotlib import pyplot as plt
 
+from src.contracts.contract import Contract
 from src.core.bot import ImageBuffer, Text
 from src.core.spike_detector import Spike
-from src.pairs.pair import Pair
 from src.utils import time
 from src.utils.utils import format_large_number, format_number_by_significant_digits
 
@@ -30,7 +30,7 @@ class Message(ABC):
 
 
 class SpikeMessage(Message):
-    def __init__(self, pair: Pair, spike: Spike, timezone: tzinfo = ZoneInfo('UTC')):
+    def __init__(self, contract: Contract, spike: Spike, timezone: tzinfo = ZoneInfo('UTC')):
         # text
         lines = []
 
@@ -38,23 +38,23 @@ class SpikeMessage(Message):
             if len(strings) == 1: lines.append(strings[0])
             else: lines.append(f'{strings[0]}{" " * (self.LINE_WIDTH - len(strings[0]) - len(strings[1]))}{strings[1]}')
 
-        duration = time.format_timedelta(pair.prices.get_timestamp(spike.end) - pair.prices.get_timestamp(spike.start), shorten=True)
-        add_line(pair.base_symbol, f'{spike.change:+.1%}/{duration}')
-        add_line('Price:', '$' + format_number_by_significant_digits(pair.price, significant_digits=3))
-        add_line('Turnover:', '$' + format_large_number(pair.turnover, decimal_places=1, decrease_decimal_places=True))
-        add_line('Funding rate:', format_number_by_significant_digits(pair.funding_rate_per_day * 100, significant_digits=1, decimal_places=3) + '%')
+        duration = time.format_timedelta(contract.prices.get_timestamp(spike.end) - contract.prices.get_timestamp(spike.start), shorten=True)
+        add_line(contract.base_symbol, f'{spike.change:+.1%}/{duration}')
+        add_line('Price:', '$' + format_number_by_significant_digits(contract.price, significant_digits=3))
+        add_line('Turnover:', '$' + format_large_number(contract.turnover, decimal_places=1, decrease_decimal_places=True))
+        add_line('Funding rate:', format_number_by_significant_digits(contract.funding_rate_per_day * 100, significant_digits=1, decimal_places=3) + '%')
 
-        text = markdown.code('\n'.join(lines)) + '\n' + markdown.code(' ' * 24) + markdown.link('Trade on Bybit', f'https://www.bybit.com/trade/usdt/{pair.symbol}')
+        text = markdown.code('\n'.join(lines)) + '\n' + markdown.code(' ' * 24) + markdown.link('Trade on Bybit', f'https://www.bybit.com/trade/usdt/{contract.symbol}')
 
         # image
         buffer = ImageBuffer()
-        fig = pair.create_chart(
+        fig = contract.create_chart(
             size=0.4,
             height_ratio=0.5,
 
             colors=[
                 ('#4287f5', 0, spike.start),
-                ('#ff367c', spike.start, pair.prices.get_last_index()),
+                ('#ff367c', spike.start, contract.prices.get_last_index()),
             ],
             price_as_percent=True,
             hide_turnover_ticks=True,
