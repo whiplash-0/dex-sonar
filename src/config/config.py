@@ -16,6 +16,7 @@ CUSTOM_PRESETS = ['production', 'test']
 CONFIG = None
 
 
+
 class Config(RawConfigParser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,9 +58,11 @@ class Config(RawConfigParser):
         return ZoneInfo(self.get(section, option, **kwargs)) if self.get(section, option, **kwargs) else default
 
 
+
 CONFIG = Config()
 _presets = [DEFAULT_PRESET]
 if len(sys.argv) > 1 and sys.argv[1] in CUSTOM_PRESETS: _presets.append(sys.argv[1])
+
 
 for preset_path in [Paths.CONFIGS / x for x in _presets]:
     if not preset_path.exists():
