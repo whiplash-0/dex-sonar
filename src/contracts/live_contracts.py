@@ -200,18 +200,18 @@ class LiveContracts(Contracts):
             if not self.ticker_updates_cooldowns.is_in_cooldown(symbol):
                 self.ticker_updates_cooldowns.set_for(symbol)
 
-                ticker = self.pybit.parse_stream_ticker(response)
-                contract = self[symbol]
+                if contract := self.get(symbol):  # if contract is actually present (there can be mismatch from bybit side)
+                    ticker = self.pybit.parse_stream_ticker(response)
 
-                contract.prices.update(
-                    ticker.price,
-                    time.ceil_timestamp_minute(ticker.timestamp),
-                )
-                contract.turnover =          ticker.turnover
-                contract.funding_rate =      ticker.funding_rate
-                contract.next_funding_time = ticker.next_funding_time
+                    contract.prices.update(
+                        ticker.price,
+                        time.ceil_timestamp_minute(ticker.timestamp),
+                    )
+                    contract.turnover =          ticker.turnover
+                    contract.funding_rate =      ticker.funding_rate
+                    contract.next_funding_time = ticker.next_funding_time
 
-                self.callback_on_price_update(contract)
+                    self.callback_on_price_update(contract)
 
         except Exception:
             logger.exception(f'`{inspect.currentframe().f_code.co_name}()`: Caught exception:'); raise
@@ -226,18 +226,18 @@ class LiveContracts(Contracts):
 
             if response[DATA][0][CONFIRM]:  # if candlestick is final
                 kline = self.pybit.parse_stream_kline(response)
-                contract = self[kline.symbol]
 
-                contract.prices.update(
-                    kline.close,
-                    time.ceil_timestamp_minute(kline.end),
-                    is_final=True,
-                )
-                contract.turnovers.update(
-                    kline.turnover,
-                    time.ceil_timestamp_minute(kline.end),
-                    is_final=True,
-                )
+                if contract := self.get(kline.symbol):  # if contract is actually present (there can be mismatch from bybit side)
+                    contract.prices.update(
+                        kline.close,
+                        time.ceil_timestamp_minute(kline.end),
+                        is_final=True,
+                    )
+                    contract.turnovers.update(
+                        kline.turnover,
+                        time.ceil_timestamp_minute(kline.end),
+                        is_final=True,
+                    )
 
         except time_series.InvalidTimeRange:  # fill candle gaps, often happens when websocket connection is temporarily lost
             logger.warning(f'`{inspect.currentframe().f_code.co_name}()`: Detected time gap in candles. Updating all contracts\' candles manually')

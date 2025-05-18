@@ -32,6 +32,9 @@ class Contracts:
     def __repr__(self):
         return f'{self.__class__.__name__}({", ".join([x.base_symbol for x in self])})'
 
+    def get(self, symbol: Symbol, default=None) -> Optional[Contract]:
+        return self.contracts.get(symbol, default)
+
     def get_symbols(self) -> list[Symbol]:
         return list(self.contracts.keys())
 
