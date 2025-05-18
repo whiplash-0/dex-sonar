@@ -174,11 +174,11 @@ class LiveContracts(Contracts):
 
             if contracts := await self._add_new_contracts_if_any():
                 self._subscribe_to_live_updates(contracts.get_symbols())
-                logger.info(f'Added new contracts: {", ".join(contracts.get_base_symbols())}')
+                logger.info(f'Added contracts: {", ".join(contracts.get_base_symbols())}')
 
-            if removed_symbols := self.get_symbols() - instruments_info_symbols:
-                logger.info(f'Removing contracts: {", ".join(self[removed_symbols].get_base_symbols())}')
-                self.remove(removed_symbols)
+            if removed_symbols := (self.get_symbols() - instruments_info_symbols):
+                removed_contracts = self.remove(removed_symbols)
+                logger.info(f'Delisted contracts: {", ".join(removed_contracts.get_base_symbols())}')
 
 
     def _are_pybit_callbacks_enabled(self):

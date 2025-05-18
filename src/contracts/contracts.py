@@ -47,9 +47,9 @@ class Contracts:
     def extend(self, contracts: ContractOrContracts) -> Self:
         return Contracts(self._extend(contracts))
 
-    def remove(self, symbols: Symbol | Iterable[Symbol]):
+    def remove(self, symbols: Symbol | Iterable[Symbol]) -> Self:
         if isinstance(symbols, Contract): symbols = [symbols]
-        for x in symbols: self.contracts.pop(x)
+        return Contracts(self.contracts.pop(x) for x in symbols)
 
     def _extend(self, contracts: ContractOrContracts) -> list[Contract]:
         if isinstance(contracts, Contract): contracts = [contracts]
