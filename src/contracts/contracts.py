@@ -35,8 +35,8 @@ class Contracts:
     def get(self, symbol: Symbol, default=None) -> Optional[Contract]:
         return self.contracts.get(symbol, default)
 
-    def get_symbols(self) -> list[Symbol]:
-        return list(self.contracts.keys())
+    def get_symbols(self) -> set[Symbol]:
+        return set(self.contracts.keys())
 
     def get_base_symbols(self) -> list[Symbol]:
         return [x.base_symbol for x in self.contracts.values()]
