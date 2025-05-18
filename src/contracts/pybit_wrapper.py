@@ -212,7 +212,7 @@ class PybitWrapper:
                             requests_exceptions.ConnectionError
                     ) as e:
                         logger.warning(
-                            f'{inspect.currentframe().f_code.co_name}(): Got \'{e}\'' +
+                            f'{inspect.currentframe().f_code.co_name}(): Caught exception: \'{e}\'' +
                             (f'. Retrying in {self.retry_cooldown.total_seconds():.1f}s' if i < self.retries_on_error else '')
                         )
 
