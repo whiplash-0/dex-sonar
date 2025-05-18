@@ -58,9 +58,9 @@ class AsyncConcurrentTasks(AsyncTasksBase):
             logger.debug('Caught `CancelledError`. Cancelling all tasks and waiting for them to complete')
 
         finally:
-            await self.cancel_all()
+            await self.cancel()
 
-    async def cancel_all(self):
+    async def cancel(self):
         self._are_cancelled = True
 
         for x in self.tasks:
