@@ -29,6 +29,7 @@ class ConnectionLostError(ConnectionError):
     ...
 
 
+
 @dataclass
 class Intervals:
     price_update:                          Timedelta = Timedelta(seconds=5)
