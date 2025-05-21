@@ -63,6 +63,7 @@ class Application:
                     self.task_handle_callbacks_from_live_contracts(),
                 ).run(blocking=True)
             ),
+            termination_signal_handler=self.stop,
         )
         self.start_time = time.get_timestamp()
         self.callback_queue = asyncio.Queue()
@@ -71,6 +72,9 @@ class Application:
         logger.info(f'Bot started')
         asyncio.run(self.tasks.run())
         logger.info(f'Bot stopped. Uptime: {time.format_timedelta(time.get_time_passed_since(self.start_time))}')
+
+    def stop(self):
+        self.tasks.schedule_task_in_async_thread(self.tasks.cancel())
 
     async def init(self):
         await self.bot.init()
