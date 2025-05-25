@@ -69,7 +69,7 @@ class Application:
         self.callback_queue = asyncio.Queue()
 
     def run(self):
-        logger.info(f'Bot started')
+        logger.info(f'Bot is starting')
         asyncio.run(self.tasks.run())
         logger.info(f'Bot stopped. Uptime: {time.format_timedelta(time.get_time_passed_since(self.start_time))}')
 
