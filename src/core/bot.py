@@ -4,7 +4,7 @@ from typing import Coroutine, Sequence
 
 from telegram import Bot as TelegramBot, InlineKeyboardMarkup, LinkPreviewOptions
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, BaseHandler, Defaults
+from telegram.ext import Application, ApplicationBuilder, BaseHandler, Defaults
 
 
 DEFAULTS = Defaults(
@@ -22,10 +22,11 @@ Text = str
 ImageBuffer = BytesIO
 
 
+
 class Bot:
     def __init__(self, token: Token, token_silent: Token):
-        self.application = ApplicationBuilder().token(token).defaults(DEFAULTS).build()
-        self.application_silent = ApplicationBuilder().token(token_silent).defaults(DEFAULTS).build()
+        self.application: Application = ApplicationBuilder().token(token).defaults(DEFAULTS).build()
+        self.application_silent: Application = ApplicationBuilder().token(token_silent).defaults(DEFAULTS).build()
         self.bot: TelegramBot = self.application.bot
         self.bot_silent: TelegramBot = self.application_silent.bot
 
