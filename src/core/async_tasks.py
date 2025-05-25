@@ -41,7 +41,7 @@ class AsyncTasksBase(ABC):
             self.event_loop.add_signal_handler(signal.SIGINT, self.termination_signal_handler)
             self.event_loop.add_signal_handler(signal.SIGTERM, self.termination_signal_handler)
 
-    async def cancel(self):
+    async def stop(self):
         self._are_cancelled = True
 
         for x in self.pending_tasks:  # ensure there are no non-awaited coroutine objects to avoid runtime warning
@@ -79,7 +79,7 @@ class AsyncSequentialTasks(AsyncTasksBase):
             logger.debug('Tasks or some task were cancelled. Skipping all following')
 
         finally:
-            await self.cancel()
+            await self.stop()
 
 
 
@@ -99,7 +99,7 @@ class AsyncConcurrentTasks(AsyncTasksBase):
             logger.debug('Tasks or some task were cancelled. Cancelling remaining tasks and waiting for them to complete')
 
         finally:
-            if blocking: await self.cancel()
+            if blocking: await self.stop()
 
 
 

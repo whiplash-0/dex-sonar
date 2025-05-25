@@ -101,7 +101,7 @@ class LiveContracts(Contracts):
         For an immediate exit with no delay or cleanup, use `os._exit(0)`.
         """
         self._disable_pybit_callbacks()
-        await self.permanent_tasks.cancel()
+        await self.permanent_tasks.stop()
 
 
     async def _add_new_contracts_if_any(self) -> Contracts:

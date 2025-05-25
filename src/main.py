@@ -81,7 +81,7 @@ class Application:
             os._exit(RETURN_CODE_FAILURE)
 
     def stop(self):
-        self.tasks.schedule_task_in_async_thread(self.tasks.cancel())
+        self.tasks.schedule_task_in_async_thread(self.tasks.stop())
 
     async def init(self):
         await self.bot.init()
