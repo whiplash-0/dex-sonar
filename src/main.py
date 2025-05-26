@@ -83,7 +83,7 @@ class Application:
             os._exit(RETURN_CODE_FAILURE)
 
     def stop(self):
-        self.asyncio_runner.schedule_task(self.tasks.stop())
+        self.asyncio_runner.schedule(self.tasks.stop())
 
     async def init(self):
         await self.bot.init()
@@ -121,7 +121,7 @@ class Application:
                 (upspike := self.upspike_detector.detect(contract))
         ):
             logger.info(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} {upspike.change:+.1%}')
-            self.asyncio_runner.schedule_task(self.callback_queue.put((contract, upspike, time.get_monotonic())))
+            self.asyncio_runner.schedule(self.callback_queue.put((contract, upspike, time.get_monotonic())))
 
     async def task_handle_callbacks_from_live_contracts(self):
         while True:

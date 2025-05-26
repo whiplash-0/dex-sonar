@@ -36,7 +36,7 @@ class AsyncioRunner:
 
         asyncio.run(wrap())
 
-    def schedule_task(self, task: Task):
+    def schedule(self, task: Task):
         """
         Schedules a task for execution, but doesn't necessarily execute it immediately
         """
