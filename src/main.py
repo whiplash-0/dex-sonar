@@ -56,9 +56,6 @@ class Application:
             prefer=Prefer.MAX_CHANGE,
             cooldown=CONFIG.get_timedelta_from_minutes('Upspike detector', 'cooldown'),
         )
-        self.asyncio_runner = AsyncioRunner(
-            termination_signal_handler=self.stop,
-        )
         self.tasks = AsyncSequentialTasks(
             self.init(),
             self.bot.run(
@@ -69,13 +66,16 @@ class Application:
                 ).run(blocking=True)
             ),
         )
+        AsyncioRunner.init(
+            termination_signal_handler=self.stop,
+        )
         self.start_time = time.get_timestamp()
         self.callback_queue = asyncio.Queue()
 
     def run(self):
         try:
             logger.info(f'Bot is starting')
-            self.asyncio_runner.run(self.tasks.run())
+            AsyncioRunner.run(self.tasks.run())
             logger.info(f'Bot stopped. Uptime: {time.format_timedelta(time.get_time_passed_since(self.start_time))}')
             os._exit(RETURN_CODE_SUCCESS)  # to avoid pybit thread ending delay
         except Exception as e:
@@ -83,7 +83,7 @@ class Application:
             os._exit(RETURN_CODE_FAILURE)
 
     def stop(self):
-        self.asyncio_runner.schedule(self.tasks.stop())
+        AsyncioRunner.schedule(self.tasks.stop())
 
     async def init(self):
         await self.bot.init()
@@ -121,7 +121,7 @@ class Application:
                 (upspike := self.upspike_detector.detect(contract))
         ):
             logger.info(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} {upspike.change:+.1%}')
-            self.asyncio_runner.schedule(self.callback_queue.put((contract, upspike, time.get_monotonic())))
+            AsyncioRunner.schedule(self.callback_queue.put((contract, upspike, time.get_monotonic())))
 
     async def task_handle_callbacks_from_live_contracts(self):
         while True:

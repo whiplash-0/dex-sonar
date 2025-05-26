@@ -20,27 +20,32 @@ TerminationSignalHandler = Callable[[], None]
 
 
 class AsyncioRunner:
-    def __init__(self, termination_signal_handler: Optional[TerminationSignalHandler] = None):
-        self.event_loop: Optional[AbstractEventLoop] = None
-        self.termination_signal_handler: Optional[TerminationSignalHandler] = termination_signal_handler
+    event_loop: Optional[AbstractEventLoop] = None
+    termination_signal_handler: Optional[TerminationSignalHandler] = None
+    
+    @classmethod
+    def init(cls, termination_signal_handler: Optional[TerminationSignalHandler] = None):
+        cls.termination_signal_handler: Optional[TerminationSignalHandler] = termination_signal_handler
 
-    def run(self, task: Task):
+    @classmethod
+    def run(cls, task: Task):
         async def wrap():
-            self.event_loop = asyncio.get_running_loop()
+            cls.event_loop = asyncio.get_running_loop()
 
-            if self.termination_signal_handler:
-                self.event_loop.add_signal_handler(signal.SIGINT, self.termination_signal_handler)
-                self.event_loop.add_signal_handler(signal.SIGTERM, self.termination_signal_handler)
+            if cls.termination_signal_handler:
+                cls.event_loop.add_signal_handler(signal.SIGINT, cls.termination_signal_handler)
+                cls.event_loop.add_signal_handler(signal.SIGTERM, cls.termination_signal_handler)
 
             return await task
 
         asyncio.run(wrap())
-
-    def schedule(self, task: Task):
+    
+    @classmethod
+    def schedule(cls, task: Task):
         """
         Schedules a task for execution, but doesn't necessarily execute it immediately
         """
-        asyncio.run_coroutine_threadsafe(task, loop=self.event_loop)
+        asyncio.run_coroutine_threadsafe(task, loop=cls.event_loop)
 
 
 
