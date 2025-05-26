@@ -1,77 +1,107 @@
 import asyncio
 import logging
+from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import Iterable
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, Update, error
-from telegram.ext import ApplicationHandlerStop, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, TypeHandler, filters
+from telegram.ext import ApplicationHandlerStop, BaseHandler, CallbackQueryHandler, CommandHandler, MessageHandler, TypeHandler, filters
 
 from src.core.bot import Bot, UserID
-from src.support.upspike_threshold import UpspikeThreshold as UpspikeThresholdValue
-
-
-COMMANDS = [('start', 'Start the bot and get menu')]
-START_TEXT = 'Menu has been pinned to your input area'
-
-class UpspikeThreshold:
-    NAME = UpspikeThresholdValue.get_name(title_case=True)
-    TEXT = f'Adjust the {UpspikeThresholdValue.get_name()} using buttons below:'
-    STEP = 0.1
-    MIN = 0.1
-    MAX = 3
+from src.support.upspike_threshold import UpspikeThreshold
 
 
 logger = logging.getLogger(__name__)
 
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    markup = ReplyKeyboardMarkup([[KeyboardButton(UpspikeThreshold.NAME)]], resize_keyboard=True)
-    await update.message.reply_text(text=START_TEXT, reply_markup=markup)
+class _Panel(ABC):
+    @classmethod
+    @abstractmethod
+    def create_handlers(cls) -> list[BaseHandler]:
+        ...
 
 
 
-class UpspikeThresholdButton(str, Enum):
-    def _generate_next_value_(name, start, count, last_values):
-        return f'{UpspikeThresholdValue.get_name(separator="_")}_{count}'
+class _UpspikeThresholdPanel(_Panel):
+    BUTTON_NAME = UpspikeThreshold.get_name(title_case=True)
+    TEXT = f'Adjust the {UpspikeThreshold.get_name()} using buttons below:'
 
-    DECREASE = auto()
-    VALUE = auto()
-    INCREASE = auto()
+    class _Value:
+        STEP = 0.1
+        MIN = 0.1
+        MAX = 3
+
+    class _Button(str, Enum):
+        def _generate_next_value_(name, start, count, last_values):
+            """
+            Generates callback data unique across the whole bot
+            """
+            return f'{UpspikeThreshold.get_name(separator="_")}_{count}'
+
+        DECREASE = auto()
+        VALUE = auto()
+        INCREASE = auto()
+
+    lock = asyncio.Lock()
 
 
-def create_upspike_threshold_markup():
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton('➖', callback_data=UpspikeThresholdButton.DECREASE),
-        InlineKeyboardButton(f'{UpspikeThresholdValue.get():.0%}', callback_data=UpspikeThresholdButton.VALUE),
-        InlineKeyboardButton('➕', callback_data=UpspikeThresholdButton.INCREASE)
-    ]])
+    @classmethod
+    def create_handlers(cls) -> list[BaseHandler]:
+        return [
+            MessageHandler(filters.Regex(f'^{cls.BUTTON_NAME}$'), cls._send),  # send original message
+            CallbackQueryHandler(cls._adjust_value, pattern='|'.join(cls._Button)),  # adjust value and message
+        ]
+
+    @classmethod
+    def _create_markup(cls):
+        return InlineKeyboardMarkup([[
+            InlineKeyboardButton('➖', callback_data=cls._Button.DECREASE),
+            InlineKeyboardButton(f'{UpspikeThreshold.get():.0%}', callback_data=cls._Button.VALUE),
+            InlineKeyboardButton('➕', callback_data=cls._Button.INCREASE)
+        ]])
+
+    @classmethod
+    async def _send(cls, update: Update, _):
+        await update.message.reply_text(text=cls.TEXT, reply_markup=cls._create_markup())
+
+    @classmethod
+    async def _adjust_value(cls, update: Update, _):
+        query = update.callback_query
+        await query.answer()
+
+        async with cls.lock:  # exclude race condition
+            match query.data:
+                case cls._Button.DECREASE:
+                    if (value := UpspikeThreshold.get() - cls._Value.STEP) >= cls._Value.MIN:
+                        await UpspikeThreshold.set(value)
+
+                case cls._Button.INCREASE:
+                    if (value := UpspikeThreshold.get() + cls._Value.STEP) <= cls._Value.MAX:
+                        await UpspikeThreshold.set(value)
+
+        try:
+            await query.edit_message_text(text=cls.TEXT, reply_markup=cls._create_markup())
+        except error.BadRequest as e:  # ignore exception about same content after editing
+            if 'specified new message content and reply markup are exactly the same' not in str(e): raise
 
 
-async def send_upspike_threshold_adjusting(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(text=UpspikeThreshold.TEXT, reply_markup=create_upspike_threshold_markup())
 
+class _StartPanel(_Panel):
+    COMMAND_NAME = 'start'
+    COMMAND_DESCRIPTION = 'Start the bot and get menu'
+    TEXT = 'Menu has been pinned to your input area'
 
-upspike_threshold_lock = asyncio.Lock()
+    @classmethod
+    def create_handlers(cls) -> list[BaseHandler]:
+        return [
+            CommandHandler(cls.COMMAND_NAME, cls._send),  # send start message on corresponding command
+        ]
 
-async def adjust_upspike_threshold(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    async with upspike_threshold_lock:  # exclude race condition
-        match query.data:
-            case UpspikeThresholdButton.DECREASE:
-                if (value := UpspikeThresholdValue.get() - UpspikeThreshold.STEP) >= UpspikeThreshold.MIN:
-                    await UpspikeThresholdValue.set(value)
-
-            case UpspikeThresholdButton.INCREASE:
-                if (value := UpspikeThresholdValue.get() + UpspikeThreshold.STEP) <= UpspikeThreshold.MAX:
-                    await UpspikeThresholdValue.set(value)
-
-    try:
-        await query.edit_message_text(text=UpspikeThreshold.TEXT, reply_markup=create_upspike_threshold_markup())
-    except error.BadRequest as e:  # ignore exception about same content after editing
-        if 'specified new message content and reply markup are exactly the same' not in str(e): raise
+    @classmethod
+    async def _send(cls, update: Update, _):
+        markup = ReplyKeyboardMarkup([[KeyboardButton(_UpspikeThresholdPanel.BUTTON_NAME)]], resize_keyboard=True)
+        await update.message.reply_text(text=cls.TEXT, reply_markup=markup)
 
 
 
@@ -79,24 +109,23 @@ class CustomBot(Bot):
     def __init__(self, whitelist: Iterable[UserID], **kwargs):
         super().__init__(**kwargs)
         self.whitelist = whitelist
-        self._init()
-
-    def _init(self):
+        self.commands = [
+            (_StartPanel.COMMAND_NAME, _StartPanel.COMMAND_DESCRIPTION),
+        ]
         self.add_handlers(
-            TypeHandler(Update, self._authorize_access),  # whitelist
+            TypeHandler(Update, self._authorize_access),  # filter updates based on whitelist
             group=0,
         )
         self.add_handlers(
-            CommandHandler('start', start),
-            MessageHandler(filters.Regex(f'^{UpspikeThreshold.NAME}$'), send_upspike_threshold_adjusting),
-            CallbackQueryHandler(adjust_upspike_threshold, pattern='|'.join(UpspikeThresholdButton)),
+            *_StartPanel.create_handlers(),
+            *_UpspikeThresholdPanel.create_handlers(),
             group=1,
         )
 
     async def init(self):
-        await self.set_my_commands(COMMANDS)
+        await self.set_my_commands(self.commands)
 
-    async def _authorize_access(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def _authorize_access(self, update: Update, _):
         user = update.effective_user
 
         if user.id not in self.whitelist:
