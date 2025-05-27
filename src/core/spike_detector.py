@@ -8,8 +8,10 @@ from src.support.upspike_threshold import UpspikeThreshold
 from src.utils.time import Cooldowns, Timedelta
 
 
+
 Change = float  # relative
 Range = int
+
 
 
 @dataclass
@@ -28,6 +30,7 @@ class Catch(Enum):
 class Prefer(Enum):
     MAX_CHANGE = auto()
     SHORTER_RANGE = auto()
+
 
 
 class SpikeDetector:

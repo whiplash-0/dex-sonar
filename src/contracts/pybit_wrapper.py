@@ -11,6 +11,10 @@ from requests import exceptions as requests_exceptions
 from src.utils.time import Timedelta, Timestamp
 
 
+
+logger = logging.getLogger(__name__)
+
+
 # pybit keywords
 # response
 RESULT = 'result'
@@ -22,9 +26,6 @@ NEXT_PAGE_CURSOR = 'nextPageCursor'
 TOPIC = 'topic'
 SYMBOL = 'symbol'
 CONFIRM = 'confirm'
-
-
-logger = logging.getLogger(__name__)
 
 
 Response = dict

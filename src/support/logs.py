@@ -11,15 +11,16 @@ from colorama import Fore
 from src.utils.time import Timestamp
 
 
+
 VERBOSE = floor(mean([
     INFO,
     WARNING,
 ]))
 
-
 def verbose(self, msg, *args, **kwargs):
     if self.isEnabledFor(VERBOSE):
         self._log(VERBOSE, msg, args, **kwargs)
+
 
 
 class ColoredFormatter(Formatter):
@@ -32,6 +33,7 @@ class ColoredFormatter(Formatter):
             logging.ERROR:    Fore.RED,
             logging.CRITICAL: Fore.RED,
         }[record.levelno] + super().format(record)
+
 
 
 def setup_logging(

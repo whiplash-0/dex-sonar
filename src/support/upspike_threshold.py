@@ -7,6 +7,7 @@ from sqlalchemy.orm import declarative_base
 from src.config import parameters
 
 
+
 DEFAULT_VALUE = 1.0
 PRECISION = 10
 

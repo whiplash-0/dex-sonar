@@ -11,6 +11,7 @@ from src.support.time_series import Index, TimeSeries
 from src.utils.time import Timedelta, Timestamp
 
 
+
 CANDLE_TIMEFRAME = Timedelta(minutes=1)
 
 

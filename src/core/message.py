@@ -12,8 +12,8 @@ from src.utils import time
 from src.utils.utils import format_large_number, format_number_by_significant_digits
 
 
-class Message(ABC):
 
+class Message(ABC):
     LINE_WIDTH = 35
 
     @abstractmethod
@@ -27,6 +27,7 @@ class Message(ABC):
     def get_image(self) -> ImageBuffer:
         self.buffer.seek(0)
         return self.buffer
+
 
 
 class SpikeMessage(Message):

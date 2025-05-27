@@ -18,10 +18,6 @@ from src.utils.time import Timedelta, Timestamp
 from src.utils.utils import format_large_number
 
 
-POLLING_INTERVAL_UPDATE_BOT_STATUS = Timedelta(minutes=1)
-RETURN_CODE_SUCCESS = 0
-RETURN_CODE_FAILURE = 1
-
 
 logs.setup_logging(
     level=logging.INFO if not CONFIG.getboolean('Logging', 'debug') else logging.DEBUG,
@@ -30,6 +26,11 @@ logs.setup_logging(
     timezone=CONFIG.get_timezone('Logging', 'timezone'),
 )
 logger = logging.getLogger(__name__)
+
+
+POLLING_INTERVAL_UPDATE_BOT_STATUS = Timedelta(minutes=1)
+RETURN_CODE_SUCCESS = 0
+RETURN_CODE_FAILURE = 1
 
 
 

@@ -3,11 +3,13 @@ from typing import Generic, Sequence, TypeVar
 from src.utils.time import Timedelta, Timestamp
 
 
+
 Value = TypeVar('Value')
 Timestep = Timedelta
 Index = int
 Values = list[Value]
 Timestamps = list[Timestamp]
+
 
 
 class InvalidTimeRange(Exception):
@@ -16,6 +18,7 @@ class InvalidTimeRange(Exception):
         message = ': ' + message if message else ''
         if ts_start is None: super().__init__(f'{interval}{message}')
         else: super().__init__(f'Can\'t update time series {ts_start} - {ts_end} with range {interval}{message}')
+
 
 
 class TimeSeries(Sequence, Generic[Value]):

@@ -8,12 +8,13 @@ from typing import Any, Callable, Coroutine as GeneralCoroutine, Iterator, Optio
 from src.utils.time import Timedelta
 
 
+
+logger = logging.getLogger(__name__)
+
+
 CoroutineObject = GeneralCoroutine[Any, Any, None]
 Coroutine = Callable[[], CoroutineObject]
 TerminationSignalHandler = Callable[[], None]
-
-
-logger = logging.getLogger(__name__)
 
 
 

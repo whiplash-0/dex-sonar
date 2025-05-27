@@ -7,13 +7,14 @@ from telegram.constants import ParseMode
 from telegram.ext import Application, ApplicationBuilder, BaseHandler, Defaults
 
 
+
+logger = logging.getLogger(__name__)
+
+
 DEFAULTS = Defaults(
     parse_mode=ParseMode.MARKDOWN_V2,
     link_preview_options=LinkPreviewOptions(is_disabled=True),
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 Token = str

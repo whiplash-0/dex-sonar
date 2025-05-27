@@ -3,7 +3,9 @@ from typing import Callable, Iterable, Iterator, Optional, Self
 from src.contracts.contract import Contract, Symbol
 
 
+
 ContractOrContracts = Contract | Iterable[Contract]
+
 
 
 class Contracts:

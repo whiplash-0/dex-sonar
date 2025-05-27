@@ -6,8 +6,10 @@ from src.config.config import CONFIG
 from src.utils.utils import NumericUnit
 
 
+
 TEST_MODE = CONFIG.getboolean('Bot', 'test mode')
 PROD_MODE = not TEST_MODE
+
 
 
 BOT_TOKEN = environ.get('BOT_TOKEN' if PROD_MODE else 'TEST_BOT_TOKEN')
@@ -29,6 +31,7 @@ else:  # otherwise Heroku will add it to environment variables
     DATABASE_URL = environ.get('DATABASE_URL')
 
 DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)  # ensure compatibility with asynchronous paradigm
+
 
 
 SHOULD_CONTRACT_BE_INCLUDED = (

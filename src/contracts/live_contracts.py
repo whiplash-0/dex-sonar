@@ -14,6 +14,10 @@ from src.utils import time
 from src.utils.time import Cooldowns, Timedelta
 
 
+
+logger = logging.getLogger(__name__)
+
+
 INSTRUMENTS_INFO_RETRIES_ON_ERROR = 3
 INSTRUMENTS_INFO_RETRY_COOLDOWN = Timedelta(seconds=1)
 
@@ -21,13 +25,9 @@ CONNECTION_CHECK_RETRIES_ON_FAIL = 3
 CONNECTION_CHECK_RETRY_COOLDOWN = Timedelta(seconds=1)
 
 
-logger = logging.getLogger(__name__)
-
-
 
 class ConnectionLostError(ConnectionError):
     ...
-
 
 
 @dataclass
