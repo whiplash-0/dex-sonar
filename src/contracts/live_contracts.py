@@ -8,7 +8,7 @@ from typing import Callable, Iterable, Optional
 from src.contracts.contract import Contract, Symbol
 from src.contracts.contracts import Contracts
 from src.contracts.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
-from src.core.async_tasks import AsyncConcurrentPollingTasks
+from src.core.async_workflow import AsyncPollingTasks
 from src.support import time_series
 from src.utils import time
 from src.utils.time import Cooldowns, Timedelta
@@ -53,7 +53,7 @@ class LiveContracts(Contracts):
             retries_on_error=INSTRUMENTS_INFO_RETRIES_ON_ERROR,
             retry_cooldown=INSTRUMENTS_INFO_RETRY_COOLDOWN,
         )
-        self.permanent_tasks = AsyncConcurrentPollingTasks(
+        self.permanent_tasks = AsyncPollingTasks(
             (
                 self._polling_task_update_instruments_info,
                 intervals.instruments_info_update,
@@ -83,13 +83,10 @@ class LiveContracts(Contracts):
         await self._add_new_contracts_if_any()
 
 
-    def are_live_updates_active(self):
-        return self.pybit.is_connection_alive() and self._are_pybit_callbacks_enabled() and not self.permanent_tasks.are_cancelled()
-
     async def start_live_updates(self):
         self._enable_pybit_callbacks()
         self._subscribe_to_live_updates()
-        await self.permanent_tasks.run(blocking=True)  # to be able to propagate exceptions
+        await self.permanent_tasks.run()  # to be able to propagate exceptions
 
     async def stop_live_updates(self):
         """
