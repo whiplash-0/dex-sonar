@@ -85,6 +85,7 @@ class Application:
             os._exit(RETURN_CODE_FAILURE)
 
     def stop(self):
+        logger.debug(f'Got termination signal. Stopping bot')
         AsyncRunner.schedule(self.tasks.stop())
 
     async def init(self):
