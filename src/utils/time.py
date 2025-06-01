@@ -1,6 +1,6 @@
 import importlib
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta as _timedelta, timezone
 from typing import Generic, Hashable, TypeVar
 
 _time = importlib.import_module('time')
@@ -9,7 +9,7 @@ _time = importlib.import_module('time')
 
 Seconds = float
 Timestamp = datetime  # timezone aware by convention, otherwise UTC timezone is assumed
-Timedelta = timedelta
+Timedelta = _timedelta
 
 
 MIN_TIMESTAMP = Timestamp.min.replace(tzinfo=timezone.utc)
@@ -51,29 +51,37 @@ _time_units = [
 ]
 
 
+class Time:
+    @staticmethod
+    def now() -> Timestamp:
+        return Timestamp.now(timezone.utc)
 
-def get_timestamp() -> Timestamp:
-    return Timestamp.now(timezone.utc)
+    @staticmethod
+    def monotonic() -> Seconds:
+        return _time.monotonic()
 
+    @staticmethod
+    def passed_since(timestamp: Timestamp) -> Timedelta:
+        return Timestamp.now(timezone.utc) - timestamp
 
-def get_monotonic() -> Seconds:
-    return _time.monotonic()
+    @staticmethod
+    def ceil_to_minute(timestamp: Timestamp) -> Timestamp:
+        ceiled_part = Timedelta(
+            seconds=timestamp.second,
+            microseconds=timestamp.microsecond,
+        )
+        return (
+            timestamp
+            if not ceiled_part else
+            timestamp - ceiled_part + TimeUnit.MINUTE
+        )
 
-
-def get_time_passed_since(ts: Timestamp) -> Timedelta:
-    return Timestamp.now(timezone.utc) - ts
-
-
-def ceil_timestamp_minute(ts: Timestamp) -> Timestamp:
-    ceiled_part = Timedelta(seconds=ts.second, microseconds=ts.microsecond)
-    return ts if not ceiled_part else ts - ceiled_part + TimeUnit.MINUTE
-
-
-def format_timedelta(td: Timedelta, shorten: bool = False) -> str:
-    for tu in reversed(_time_units):
-        if td >= tu.timedelta:
-            return tu.format(td // tu.timedelta, shorten)
-    return _time_units[0].format(0, shorten)
+    @staticmethod
+    def format_timedelta(timedelta: Timedelta, shorten: bool = False) -> str:
+        for tu in reversed(_time_units):
+            if timedelta >= tu.timedelta:
+                return tu.format(timedelta // tu.timedelta, shorten)
+        return _time_units[0].format(0, shorten)
 
 
 
@@ -89,10 +97,10 @@ class Cooldowns(Generic[_T]):
         return self.cooldown
 
     def set_for(self, key: _T):
-        self.cooldown_starts[key] = get_timestamp()
+        self.cooldown_starts[key] = Time.now()
 
     def set_start_for(self, key: _T, timestamp: Timestamp):
         self.cooldown_starts[key] = timestamp
 
     def is_in_cooldown(self, key: _T) -> bool:
-        return get_time_passed_since(self.cooldown_starts.get(key, MIN_TIMESTAMP)) <= self.cooldown
+        return Time.passed_since(self.cooldown_starts.get(key, MIN_TIMESTAMP)) <= self.cooldown

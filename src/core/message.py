@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from src.contracts.contract import Contract
 from src.core.bot import ImageBuffer, Text
 from src.core.spike_detector import Spike
-from src.utils import time
+from src.utils.time import Time
 from src.utils.utils import format_large_number, format_number_by_significant_digits
 
 
@@ -39,7 +39,7 @@ class SpikeMessage(Message):
             if len(strings) == 1: lines.append(strings[0])
             else: lines.append(f'{strings[0]}{" " * (self.LINE_WIDTH - len(strings[0]) - len(strings[1]))}{strings[1]}')
 
-        duration = time.format_timedelta(contract.prices.get_timestamp(spike.end) - contract.prices.get_timestamp(spike.start), shorten=True)
+        duration = Time.format_timedelta(contract.prices.get_timestamp(spike.end) - contract.prices.get_timestamp(spike.start), shorten=True)
         add_line(contract.base_symbol, f'{spike.change:+.1%}/{duration}')
         add_line('Price:', '$' + format_number_by_significant_digits(contract.price, significant_digits=3))
         add_line('Turnover:', '$' + format_large_number(contract.turnover, decimal_places=1, decrease_decimal_places=True))

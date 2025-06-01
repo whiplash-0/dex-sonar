@@ -9,8 +9,7 @@ from src.contracts.contracts import Contracts
 from src.contracts.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
 from src.core.workflow_runner import AsyncPollingTasks, ThreadedTasks
 from src.support import time_series
-from src.utils import time
-from src.utils.time import Cooldowns, Timedelta
+from src.utils.time import Cooldowns, Time, Timedelta
 
 
 
@@ -148,7 +147,7 @@ class LiveContracts(Contracts):
     async def _polling_task_stagger_price_updates(self):
         self._disable_pybit_callbacks()
 
-        timestamp = time.get_timestamp()
+        timestamp = Time.now()
         delta = self.ticker_updates_cooldowns.get_cooldown() / (len(self) - 1) if len(self) > 1 else Timedelta()
         for i, x in enumerate(self): self.ticker_updates_cooldowns.set_start_for(x, timestamp + delta * i - self.ticker_updates_cooldowns.get_cooldown())
 
@@ -203,7 +202,7 @@ class LiveContracts(Contracts):
 
                     contract.prices.update(
                         ticker.price,
-                        time.ceil_timestamp_minute(ticker.timestamp),
+                        Time.ceil_to_minute(ticker.timestamp),
                     )
                     contract.turnover =          ticker.turnover
                     contract.funding_rate =      ticker.funding_rate
@@ -228,12 +227,12 @@ class LiveContracts(Contracts):
                 if contract := self.get(kline.symbol):  # if contract is actually present (there can be mismatch from bybit side)
                     contract.prices.update(
                         kline.close,
-                        time.ceil_timestamp_minute(kline.end),
+                        Time.ceil_to_minute(kline.end),
                         is_final=True,
                     )
                     contract.turnovers.update(
                         kline.turnover,
-                        time.ceil_timestamp_minute(kline.end),
+                        Time.ceil_to_minute(kline.end),
                         is_final=True,
                     )
 

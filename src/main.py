@@ -13,8 +13,7 @@ from src.core.spike_detector import Catch, Prefer, Spike, SpikeDetector
 from src.core.workflow_runner import AsyncRunner, AsyncTasks
 from src.support import logs
 from src.support.upspike_threshold import UpspikeThreshold
-from src.utils import time
-from src.utils.time import Timedelta, Timestamp
+from src.utils.time import Time, Timedelta, Timestamp
 from src.utils.utils import format_large_number
 
 
@@ -71,14 +70,14 @@ class Application:
         AsyncRunner.init(
             termination_signal_handler=self.stop,
         )
-        self.start_time = time.get_timestamp()
+        self.start_time = Time.now()
         self.callback_queue = asyncio.Queue()
 
     def run(self):
         try:
             logger.info(f'Bot is starting')
             AsyncRunner.run(self.tasks.run())
-            logger.info(f'Bot stopped. Uptime: {time.format_timedelta(time.get_time_passed_since(self.start_time))}')
+            logger.info(f'Bot stopped. Uptime: {Time.format_timedelta(Time.passed_since(self.start_time))}')
             os._exit(RETURN_CODE_SUCCESS)  # to avoid pybit thread ending delay
         except Exception as e:
             logger.exception(e)
@@ -109,7 +108,7 @@ class Application:
         try:
             while True:
                 await self.bot.set_description(
-                    f'Uptime: {time.format_timedelta(time.get_time_passed_since(self.start_time))} '
+                    f'Uptime: {Time.format_timedelta(Time.passed_since(self.start_time))} '
                     f'({Timestamp.now(CONFIG.get_timezone("Logging", "timezone")).strftime("%H:%M %d-%m")})'
                 )
                 await asyncio.sleep(polling_interval.total_seconds())
@@ -124,14 +123,14 @@ class Application:
                 (upspike := self.upspike_detector.detect(contract))
         ):
             logger.info(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} {upspike.change:+.1%}')
-            AsyncRunner.schedule(self.callback_queue.put((contract, upspike, time.get_monotonic())))
+            AsyncRunner.schedule(self.callback_queue.put((contract, upspike, Time.monotonic())))
 
     async def task_handle_callbacks_from_live_contracts(self):
         while True:
             contract, upspike, start_time = await self.callback_queue.get()
-            logger.debug(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} Delay before callback: {time.get_monotonic() - start_time:.1f}s'); start_time = time.get_monotonic()
+            logger.debug(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} Delay before callback: {Time.monotonic() - start_time:.1f}s'); start_time = Time.monotonic()
             await self._callback_on_price_update_async(contract, upspike)
-            logger.debug(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} Callback executed in:  {time.get_monotonic() - start_time:.1f}s. Left: {self.callback_queue.qsize()}')
+            logger.debug(f'{contract.base_symbol + ":":>{contract.BASE_SYMBOL_MAX_LEN + 1}} Callback executed in:  {Time.monotonic() - start_time:.1f}s. Left: {self.callback_queue.qsize()}')
 
     async def _callback_on_price_update_async(self, contract: Contract, upspike: Spike):
         message = SpikeMessage(

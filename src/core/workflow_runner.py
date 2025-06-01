@@ -5,8 +5,7 @@ import signal
 from asyncio import AbstractEventLoop, Task, TaskGroup
 from typing import Any, Callable, Coroutine as GeneralCoroutine, Iterable, Iterator, Optional
 
-from src.utils import time
-from src.utils.time import Timedelta
+from src.utils.time import Time, Timedelta
 
 
 
@@ -115,6 +114,6 @@ class AsyncPollingTasks(AsyncTasks):
     @staticmethod
     async def _wrap_task_with_polling(coroutine, poll_interval):
         while True:
-            start = time.get_monotonic()
+            start = Time.monotonic()
             await coroutine()
-            await asyncio.sleep(max(poll_interval.total_seconds() - (time.get_monotonic() - start), 0))
+            await asyncio.sleep(max(poll_interval.total_seconds() - (Time.monotonic() - start), 0))
