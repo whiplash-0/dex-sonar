@@ -245,31 +245,45 @@ class PybitWrapper:
         ]
         return {x.symbol: x for x in tickers}
 
-    def get_kline(self, symbol: Symbol, from_past_to_present: bool = False) -> Kline:
+    def get_kline(
+            self,
+            symbol: Symbol,
+            start: Optional[Timestamp] = None,
+            end: Optional[Timestamp] = None,
+            from_past_to_present: bool = False,
+    ) -> Optional[Kline]:
+
+        if start and end:  # ensure only 1 is passed
+            raise ValueError('Only one of `start` or `end` may be provided, not both')
+
         response_list = self.http.get_kline(
             category=CATEGORY,
             symbol=symbol,
-            intervalTime=KLINE_INTERVAL,
+            start=start.timestamp() * 1000 if start else None,  # convert to milliseconds
+            end=end.timestamp() * 1000 if end else None,
+            interval=KLINE_INTERVAL,
             limit=LIMIT,
         )[RESULT][LIST]
 
-        kline = list(
-            zip(*(
-                response_list
-                if not from_past_to_present else
-                reversed(response_list)
-            ))
-        )
+        if response_list:
+            kline = list(
+                zip(*(
+                    response_list
+                    if not from_past_to_present else
+                    reversed(response_list)
+                ))
+            )
+            return Kline(
+                timestamps=kline[0],
+                opens=kline[1],
+                highs=kline[2],
+                lows=kline[3],
+                closes=kline[4],
+                volumes=kline[5],
+                turnovers=kline[6],
+            )
 
-        return Kline(
-            timestamps=kline[0],
-            opens=kline[1],
-            highs=kline[2],
-            lows=kline[3],
-            closes=kline[4],
-            volumes=kline[5],
-            turnovers=kline[6],
-        )
+        return None
 
     @staticmethod
     def parse_stream_ticker(response: Response) -> StreamTicker:
