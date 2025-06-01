@@ -12,7 +12,10 @@ Timestamp = datetime  # timezone aware by convention, otherwise UTC timezone is 
 Timedelta = _timedelta
 
 
-MIN_TIMESTAMP = Timestamp.min.replace(tzinfo=timezone.utc)
+
+class TimestampBounds:
+    MIN = Timestamp.min.replace(tzinfo=timezone.utc)
+    MAX = Timestamp.max.replace(tzinfo=timezone.utc)
 
 
 
@@ -103,4 +106,4 @@ class Cooldowns(Generic[_T]):
         self.cooldown_starts[key] = timestamp
 
     def is_in_cooldown(self, key: _T) -> bool:
-        return Time.passed_since(self.cooldown_starts.get(key, MIN_TIMESTAMP)) <= self.cooldown
+        return Time.passed_since(self.cooldown_starts.get(key, TimestampBounds.MIN)) <= self.cooldown
