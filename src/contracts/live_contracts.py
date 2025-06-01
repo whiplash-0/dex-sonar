@@ -8,7 +8,7 @@ from typing import Callable, Iterable, Optional
 from src.contracts.contract import Contract, Symbol
 from src.contracts.contracts import Contracts
 from src.contracts.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
-from src.core.async_workflow import AsyncPollingTasks
+from src.core.workflow_runner import AsyncPollingTasks
 from src.support import time_series
 from src.utils import time
 from src.utils.time import Cooldowns, Timedelta
@@ -28,6 +28,7 @@ CONNECTION_CHECK_RETRY_COOLDOWN = Timedelta(seconds=1)
 
 class ConnectionLostError(ConnectionError):
     ...
+
 
 
 @dataclass
@@ -256,21 +257,21 @@ class LiveContracts(Contracts):
         # confirmed (closed) candles
         contract.prices.update(
             kline.closes[:-1],
-            kline.starts[1:],
+            kline.timestamps[1:],
             is_final=True,
         )
         contract.turnovers.update(
             kline.turnovers[:-1],
-            kline.starts[1:],
+            kline.timestamps[1:],
             is_final=True,
         )
 
         # last unconfirmed (unknown status) candle
         contract.prices.update(
             kline.closes[-1],
-            kline.starts[-1] + contract.prices.get_time_step(),
+            kline.timestamps[-1] + contract.prices.get_time_step(),
         )
         contract.turnovers.update(
             kline.turnovers[-1],
-            kline.starts[-1] + contract.turnovers.get_time_step(),
+            kline.timestamps[-1] + contract.turnovers.get_time_step(),
         )

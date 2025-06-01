@@ -86,7 +86,7 @@ class Kline(BaseModel):
     """
     Refer to: https://bybit-exchange.github.io/docs/v5/market/kline
     """
-    starts: list[Timestamp] = Field(...)
+    timestamps: list[Timestamp] = Field(...)
     opens: list[float] = Field(...)
     highs: list[float] = Field(...)
     lows: list[float] = Field(...)
@@ -259,7 +259,7 @@ class PybitWrapper:
         )
 
         return Kline(
-            starts=kline[0],
+            timestamps=kline[0],
             opens=kline[1],
             highs=kline[2],
             lows=kline[3],
