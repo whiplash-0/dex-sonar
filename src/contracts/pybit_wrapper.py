@@ -186,7 +186,7 @@ class PybitWrapper:
     def subscribe_to_kline_updates(self, symbols: Iterable[Symbol], callback: Callable[[Response], None]):
         self.websocket.kline_stream(KLINE_INTERVAL, symbols, callback)
 
-    async def get_instruments_info(self, cached=False) -> dict[Symbol, InstrumentInfo]:
+    async def get_instruments_info(self, delisted=False, cached=False) -> dict[Symbol, InstrumentInfo]:
         """
         Should be used as only source for instruments / contracts, not `get_tickers()`
         """
@@ -203,6 +203,7 @@ class PybitWrapper:
                     try:
                         response = self.http.get_instruments_info(
                             category=CATEGORY,
+                            status='Trading' if not delisted else 'Closed',
                             limit=LIMIT,
                             cursor=response[NEXT_PAGE_CURSOR] if response else None,
                         )[RESULT]
