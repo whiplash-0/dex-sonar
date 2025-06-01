@@ -7,10 +7,10 @@ from src.config.config import CONFIG
 from src.contracts import live_contracts
 from src.contracts.contract import Contract
 from src.contracts.live_contracts import Intervals, LiveContracts
-from src.core.async_workflow import AsyncRunner, AsyncTasks
 from src.core.custom_bot import CustomBot
 from src.core.message import SpikeMessage
 from src.core.spike_detector import Catch, Prefer, Spike, SpikeDetector
+from src.core.workflow_runner import AsyncRunner, AsyncTasks
 from src.support import logs
 from src.support.upspike_threshold import UpspikeThreshold
 from src.utils import time

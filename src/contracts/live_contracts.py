@@ -1,5 +1,4 @@
 import asyncio
-import concurrent
 import inspect
 import logging
 from dataclasses import dataclass
@@ -8,7 +7,7 @@ from typing import Callable, Iterable, Optional
 from src.contracts.contract import Contract, Symbol
 from src.contracts.contracts import Contracts
 from src.contracts.pybit_wrapper import CONFIRM, DATA, PybitWrapper, Response, SYMBOL
-from src.core.workflow_runner import AsyncPollingTasks
+from src.core.workflow_runner import AsyncPollingTasks, ThreadedTasks
 from src.support import time_series
 from src.utils import time
 from src.utils.time import Cooldowns, Timedelta
@@ -247,8 +246,13 @@ class LiveContracts(Contracts):
 
 
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # requests / urllib3 supports only 10 connections
-            executor.map(self._update_contract_candles, symbols if symbols is not None else self.get_symbols())
+        ThreadedTasks(
+            self._update_contract_candles,
+            [
+                (x,) for x
+                in (symbols if symbols is not None else self.get_symbols())
+            ],
+        ).run()
 
     def _update_contract_candles(self, symbol: Symbol):
         contract = self[symbol]

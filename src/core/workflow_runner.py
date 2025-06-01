@@ -1,8 +1,9 @@
 import asyncio
+import concurrent
 import logging
 import signal
 from asyncio import AbstractEventLoop, Task, TaskGroup
-from typing import Any, Callable, Coroutine as GeneralCoroutine, Iterator, Optional
+from typing import Any, Callable, Coroutine as GeneralCoroutine, Iterable, Iterator, Optional
 
 from src.utils import time
 from src.utils.time import Timedelta
@@ -12,9 +13,33 @@ from src.utils.time import Timedelta
 logger = logging.getLogger(__name__)
 
 
+VoidFunction = Callable[..., None]
 CoroutineObject = GeneralCoroutine[Any, Any, None]
 Coroutine = Callable[[], CoroutineObject]
 TerminationSignalHandler = Callable[[], None]
+
+
+
+class ThreadedTasks:
+    def __init__(self, function: VoidFunction, args: Iterable[tuple], max_workers: Optional[int] = None):
+        self.function = function
+        self.args = args
+        self.max_workers = max_workers if max_workers else 10  # requests / urllib3 supports only 10 connections
+
+    def run(self):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = [
+                executor.submit(self.function, *args) for args in self.args
+            ]
+
+            try:
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+
+            except Exception as e:
+                for f in futures:
+                    f.cancel()
+                raise e
 
 
 
