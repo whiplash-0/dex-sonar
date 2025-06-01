@@ -1,4 +1,5 @@
 import logging
+import sys
 from datetime import tzinfo
 from logging import CRITICAL, DEBUG, Formatter, INFO, LogRecord, StreamHandler, WARNING, getLogger
 from math import floor
@@ -41,17 +42,23 @@ def setup_logging(
         format: str,
         timestamp_format: str,
         timezone: tzinfo = ZoneInfo('UTC'),
+        forward_to_stdout=False,
 ):
+    root_logger = getLogger()
+
+    # remove all handlers (prevents duplicates in Jupyter)
+    if root_logger.hasHandlers():
+        root_logger.handlers.clear()
+
     logging.Formatter.converter = lambda *args: Timestamp.now(timezone).timetuple()
 
     colorama.init(autoreset=True)
     logging.addLevelName(VERBOSE, 'VERBOSE')
     logging.Logger.verbose = verbose
 
-    root_logger = getLogger()
     root_logger.setLevel(level=level)
 
-    handler = StreamHandler()
+    handler = StreamHandler(None if not forward_to_stdout else sys.stdout)
     handler.setLevel(level)
     handler.setFormatter(ColoredFormatter(format, datefmt=timestamp_format))
     root_logger.addHandler(handler)
