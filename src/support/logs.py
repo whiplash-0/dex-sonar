@@ -1,7 +1,7 @@
 import logging
 import sys
 from datetime import tzinfo
-from logging import CRITICAL, DEBUG, Formatter, INFO, LogRecord, StreamHandler, WARNING, getLogger
+from logging import CRITICAL, DEBUG, ERROR, Formatter, INFO, LogRecord, StreamHandler, WARNING, getLogger
 from math import floor
 from statistics import mean
 from zoneinfo import ZoneInfo
@@ -17,6 +17,7 @@ VERBOSE = floor(mean([
     INFO,
     WARNING,
 ]))
+
 
 def verbose(self, msg, *args, **kwargs):
     if self.isEnabledFor(VERBOSE):
@@ -71,7 +72,7 @@ def setup_logging(
         ('httpx',      WARNING,  None    ),
         ('httpcore',   INFO,     None    ),
         ('matplotlib', INFO,     None    ),
-        ('urllib3',    WARNING,  None    ),
+        ('urllib3',    ERROR,    None    ),
     ]:
         getLogger(scope).setLevel(
             default_level
