@@ -8,11 +8,16 @@ from pybit import unified_trading
 from pydantic import BaseModel, Field, field_validator, model_validator
 from requests import exceptions as requests_exceptions
 
-from src.utils.time import Timedelta, Timestamp
+from src.core.workflow_runner import ThreadedTasks
+from src.utils.time import TimeUnit, Timedelta, Timestamp
 
 
 
 logger = logging.getLogger(__name__)
+
+
+CORRECT_LAUNCH_TIME_MAX_WORKERS = 500
+
 
 
 Response = dict
@@ -119,6 +124,7 @@ class InstrumentInfo(BaseModel):
     """
     Refer to: https://bybit-exchange.github.io/docs/v5/market/instrument
 
+    :param launch_time: Not reliable at least for `Kline` data. Use the corresponding method instead
     :param funding_interval: In hours
     """
     symbol: Symbol = Field(...)
@@ -151,9 +157,12 @@ CATEGORY = 'linear'
 NEXT_PAGE_CURSOR = 'nextPageCursor'
 LIMIT = 1000
 KLINE_INTERVAL = '1'
+DUMMY_OLD_TIMESTAMP = Timestamp(2000, 1, 1)
 
 
 class PybitWrapper:
+    DATA_TIMEFRAME = TimeUnit.MINUTE
+
     def __init__(self, retries_on_error: int = 0, retry_cooldown: Timedelta = Timedelta()):
         self.http = unified_trading.HTTP(testnet=False)
         self.websocket = unified_trading.WebSocket(testnet=False, channel_type=CATEGORY)
@@ -170,58 +179,78 @@ class PybitWrapper:
     def subscribe_to_kline_updates(self, symbols: Iterable[Symbol], callback: Callable[[Response], None]):
         self.websocket.kline_stream(KLINE_INTERVAL, symbols, callback)
 
-    async def get_instruments_info(self, delisted=False, cached=False) -> dict[Symbol, InstrumentInfo]:
+    async def get_instruments_info(self, delisted=False, cached=False, correct_launch_time=False) -> dict[Symbol, InstrumentInfo]:
         """
         Should be used as only source for instruments / contracts, not `get_tickers()`
         """
         if cached and self.cached_instruments_info:
             return self.cached_instruments_info
 
-        else:
-            response_list = []
-            response = None
 
-            while response is None or response[NEXT_PAGE_CURSOR] != '':  # ensure there are no more pages
+        response_list = []
+        response = None
 
-                for i in range(1 + self.retries_on_error):
-                    try:
-                        response = self.http.get_instruments_info(
-                            category=CATEGORY,
-                            status='Trading' if not delisted else 'Closed',
-                            limit=LIMIT,
-                            cursor=response[NEXT_PAGE_CURSOR] if response else None,
-                        )[RESULT]
-                        response_list.extend(
-                            response[LIST]
-                        )
-                        break
+        while response is None or response[NEXT_PAGE_CURSOR] != '':  # ensure there are no more pages
 
-                    except (
-                            requests_exceptions.ReadTimeout,
-                            requests_exceptions.ConnectionError
-                    ) as e:
-                        logger.warning(
-                            f'{inspect.currentframe().f_code.co_name}(): Caught exception: \'{e}\'' +
-                            (f'. Retrying in {self.retry_cooldown.total_seconds():.1f}s' if i < self.retries_on_error else '')
-                        )
+            for i in range(1 + self.retries_on_error):
+                try:
+                    response = self.http.get_instruments_info(
+                        category=CATEGORY,
+                        status='Trading' if not delisted else 'Closed',
+                        limit=LIMIT,
+                        cursor=response[NEXT_PAGE_CURSOR] if response else None,
+                    )[RESULT]
+                    response_list.extend(
+                        response[LIST]
+                    )
+                    break
 
-                        if i == self.retries_on_error:
-                            raise
+                except (
+                        requests_exceptions.ReadTimeout,
+                        requests_exceptions.ConnectionError
+                ) as e:
+                    logger.warning(
+                        f'{inspect.currentframe().f_code.co_name}(): Caught exception: \'{e}\'' +
+                        (f'. Retrying in {self.retry_cooldown.total_seconds():.1f}s' if i < self.retries_on_error else '')
+                    )
 
-                        await asyncio.sleep(self.retry_cooldown.total_seconds())
+                    if i == self.retries_on_error:
+                        raise
 
-            instruments_info = [
+                    await asyncio.sleep(self.retry_cooldown.total_seconds())
+
+
+        self.cached_instruments_info = {  # filter only relevant contracts
+
+            y.symbol: y for y in [
                 InstrumentInfo(**x) for x in response_list
             ]
-            self.cached_instruments_info = {
-                x.symbol: x for x in instruments_info
-                if (
-                        x.contract is Contract.LINEAR_PERPETUAL and
-                        x.quote_symbol == 'USDT'
-                )
-            }
+            if (
+                    y.contract is Contract.LINEAR_PERPETUAL and
+                    y.quote_symbol == 'USDT'
+            )
+        }
 
-            return self.cached_instruments_info
+
+        if correct_launch_time:
+
+            launch_times = ThreadedTasks(
+                self._get_launch_time,
+                ThreadedTasks.tupleize(self.cached_instruments_info.keys()),
+                max_workers=CORRECT_LAUNCH_TIME_MAX_WORKERS,
+            ).run()
+
+            # correct launch_time, otherwise remove item since it's invalid (there are no Kline data)
+            for symbol, launch_time in zip(
+                    list(self.cached_instruments_info), launch_times  # use list to allow safe dictionary modification
+            ):
+                if launch_time:
+                    self.cached_instruments_info[symbol].launch_time = launch_time
+                else:
+                    self.cached_instruments_info.pop(symbol)
+
+
+        return self.cached_instruments_info
 
     def get_tickers(self) -> dict[Symbol, Ticker]:
         tickers = [
@@ -269,6 +298,15 @@ class PybitWrapper:
             )
 
         return None
+
+    def _get_launch_time(self, symbol: Symbol) -> Timestamp:
+        if kline :=  self.get_kline(
+            symbol,
+            start=DUMMY_OLD_TIMESTAMP,
+        ):
+            return kline.timestamps[-1]
+        else:
+            return None
 
     @staticmethod
     def parse_stream_ticker(response: Response) -> StreamTicker:
