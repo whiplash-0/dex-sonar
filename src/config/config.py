@@ -15,9 +15,6 @@ CUSTOM_PRESETS = ['production', 'test']
 CONFIG_EXTENSION = 'ini'
 
 
-CONFIG = None
-
-
 
 class Config(RawConfigParser):
     def __init__(self, *args, **kwargs):

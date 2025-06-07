@@ -15,6 +15,7 @@ from src.utils.time import Timedelta, Timestamp
 CANDLE_TIMEFRAME = Timedelta(minutes=1)
 
 
+
 Symbol = str
 Price = float
 Turnover = float

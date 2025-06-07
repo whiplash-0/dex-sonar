@@ -12,6 +12,7 @@ DEFAULT_VALUE = 1.0
 PRECISION = 10
 
 
+
 Type = float
 
 
