@@ -236,7 +236,7 @@ class PybitWrapper:
 
             launch_times = ThreadedTasks(
                 self._get_launch_time,
-                ThreadedTasks.tupleize(self.cached_instruments_info.keys()),
+                ThreadedTasks.tupleize_single(self.cached_instruments_info.keys()),
                 max_workers=CORRECT_LAUNCH_TIME_MAX_WORKERS,
             ).run()
 

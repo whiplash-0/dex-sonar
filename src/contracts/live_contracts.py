@@ -247,10 +247,11 @@ class LiveContracts(Contracts):
     def _update_candles(self, symbols: Optional[Iterable[Symbol]] = None):
         ThreadedTasks(
             self._update_contract_candles,
-            [
-                (x,) for x
-                in (symbols if symbols is not None else self.get_symbols())
-            ],
+            ThreadedTasks.tupleize_single(
+                symbols
+                if symbols is not None else
+                self.get_symbols()
+            ),
         ).run()
 
     def _update_contract_candles(self, symbol: Symbol):
